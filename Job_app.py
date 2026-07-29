@@ -1,5 +1,6 @@
 import requests
 import json
+import sys
 
 file_path = r"C:\Users\Apoorv Mishra\Desktop\Apoorv_Py\JobApp\applied.json"
 
@@ -42,12 +43,21 @@ class JobManager:
         self.jobs.append(job)
 
     def apply_job(self, job):
-        if job.apply_link not in self.applied_jobs:
-            self.applied_jobs.append(job.apply_link)
-            self.save_applied_jobs()
-            print("Applied!!")
-        else:
+        if any(
+            applied_job["apply_link"] == job.apply_link
+            for applied_job in self.applied_jobs
+    ):
             print("Already applied!")
+            return
+
+        self.applied_jobs.append({
+            "title": job.title,
+            "description": job.description,
+            "apply_link": job.apply_link
+    })
+
+        self.save_applied_jobs()
+        print("Applied!!")
 
     def show_applied_jobs(self):
         print("\nThe applied jobs are:")
@@ -55,7 +65,10 @@ class JobManager:
             print("No jobs applied yet.")
         else:
             for i, job in enumerate(self.applied_jobs, start=1):
-                print(f"{i}. {job}")
+                print(f"{i}. {job["title"]}")
+                print(f"Link: {job["apply_link"]}")
+                print(f"Description: {job["description"][:100]}...")
+                print("-" * 40)
 
 def get_job_info(search_term, location, country):
     base_url = f"https://api.adzuna.com/v1/api/jobs/{country}/search/1"
@@ -63,7 +76,8 @@ def get_job_info(search_term, location, country):
         "app_id": app_id,
         "app_key": app_key,
         "what": search_term,
-        "where": location
+        "where": location,
+        "results_per_page": 50
     }
 
     try:
@@ -106,14 +120,18 @@ if job_info:
             job_obj.display(i)
 
             while True:
-                applied = input("press 1 to apply and 0 to skip: ")
-                if applied in ["0", "1"]:
+                applied = input("press 1 to apply and 0 to skip or q to exit: ")
+                if applied in ["0", "1", "q"]:
                     break
                 else:
-                    print("You have to press either 1 or 0")
+                    print("You have to press either 1, 0 or q")
 
             if applied == "1":
                 manager.apply_job(job_obj)
+            elif applied == "q":
+                print("Exiting the program...")
+                manager.show_applied_jobs()
+                sys.exit()
             else:
                 print("Skipped!")
 
