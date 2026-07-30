@@ -1,6 +1,11 @@
+import os
+from dotenv import load_dotenv
+
+load_dotenv()
+
 FILE_PATH = r"C:\Users\Apoorv Mishra\Desktop\Apoorv_Py\JobApp\data\applied.json"
 
-APP_ID = "7f611dde"
-APP_KEY = "20ad94644ef7f5e8c66f14b883aabd86"
+APP_ID = os.getenv("APP_ID")
+APP_KEY = os.getenv("APP_KEY")
 
 RESULTS_PER_PAGE = 50
