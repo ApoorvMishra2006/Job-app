@@ -8,31 +8,69 @@ from services.remotive_api import get_remotive_jobs
 def main():
 
     job_name = input("Enter job keyword: ")
-    job_location = input("Enter job location: ")
-    country_name = input("Enter country code (us/in/gb): ")
 
-    salary_min = input("Enter minimum salary (leave blank if none): ")
+    print("\nChoose job source")
+    print("1. Adzuna (location-based jobs)")
+    print("2. Remotive (remote jobs)")
+    print("3. Both")
 
-    adzuna_jobs = get_job_info(
-        job_name,
-        job_location,
-        country_name,
-        salary_min,
-    )
+    source = input("\nChoice: ")
 
-    remotive_jobs = get_remotive_jobs(job_name)
+    if source == "1":
 
-    jobs = adzuna_jobs + remotive_jobs
+        job_location = input("Enter job location: ")
+        country_name = input("Enter country code (us/in/gb): ")
+        salary_min = input("Enter minimum salary (leave blank if none): ")
+
+        jobs = get_job_info(
+            job_name,
+            job_location,
+            country_name,
+            salary_min,
+        )
+
+    elif source == "2":
+
+        jobs = get_remotive_jobs(job_name)
+
+    elif source == "3":
+
+        job_location = input("Enter job location: ")
+        country_name = input("Enter country code (us/in/gb): ")
+        salary_min = input("Enter minimum salary (leave blank if none): ")
+
+        print(
+            "\nNote:"
+            "\nLocation, country and salary filters apply only to Adzuna."
+            "\nRemotive searches remote jobs using only the keyword.\n"
+        )
+
+        adzuna_jobs = get_job_info(
+            job_name,
+            job_location,
+            country_name,
+            salary_min,
+        )
+
+        remotive_jobs = get_remotive_jobs(job_name)
+
+        jobs = adzuna_jobs + remotive_jobs
+
+    else:
+
+        print("Invalid choice.")
+        return
 
     manager = JobManager()
     manager.load_applied_jobs()
 
     if not jobs:
+
         print("No jobs found.")
 
     else:
 
-        print(f"\nFound {len(jobs)} jobs.\n")
+        print("\nJobs found:\n")
 
         for i, job in enumerate(jobs, start=1):
 
@@ -50,14 +88,17 @@ def main():
                 print("You have to press either 1, 0 or q.")
 
             if applied == "1":
+
                 manager.apply_job(job)
 
             elif applied == "q":
+
                 print("Exiting the program...")
                 manager.show_applied_jobs()
                 sys.exit()
 
             else:
+
                 print("Skipped!")
 
     manager.show_applied_jobs()
