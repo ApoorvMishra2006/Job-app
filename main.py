@@ -2,21 +2,27 @@ import sys
 
 from managers.job_manager import JobManager
 from services.adzuna_api import get_job_info
+from services.remotive_api import get_remotive_jobs
 
 
 def main():
+
     job_name = input("Enter job keyword: ")
     job_location = input("Enter job location: ")
     country_name = input("Enter country code (us/in/gb): ")
 
     salary_min = input("Enter minimum salary (leave blank if none): ")
 
-    jobs = get_job_info(
+    adzuna_jobs = get_job_info(
         job_name,
         job_location,
         country_name,
         salary_min,
     )
+
+    remotive_jobs = get_remotive_jobs(job_name)
+
+    jobs = adzuna_jobs + remotive_jobs
 
     manager = JobManager()
     manager.load_applied_jobs()
@@ -25,7 +31,8 @@ def main():
         print("No jobs found.")
 
     else:
-        print("\nJobs found:\n")
+
+        print(f"\nFound {len(jobs)} jobs.\n")
 
         for i, job in enumerate(jobs, start=1):
 
@@ -34,6 +41,7 @@ def main():
             job.display(i)
 
             while True:
+
                 applied = input("Press 1 to apply, 0 to skip or q to exit: ")
 
                 if applied in ["0", "1", "q"]:
