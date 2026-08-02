@@ -25,6 +25,7 @@ def choose_countries():
         choice = input("\nChoice: ")
 
         if choice not in COUNTRIES:
+
             print("Invalid country.")
             return None
 
@@ -49,7 +50,10 @@ def choose_countries():
 
             if choice in COUNTRIES:
 
-                selected.append(COUNTRIES[choice][1])
+                code = COUNTRIES[choice][1]
+
+                if code not in selected:
+                    selected.append(code)
 
         if not selected:
 
@@ -79,24 +83,21 @@ def main():
     print("2. Remotive (remote jobs)")
     print("3. Both")
 
-    source = input("\nChoice: ")
+    source = input("\nChoice (1/2/3): ")
 
     if source == "1":
-
-        job_location = input("Enter job location: ")
-
-        salary_min = input(
-            "Enter minimum salary (leave blank if none): "
-        )
 
         countries = choose_countries()
 
         if countries is None:
             return
 
+        salary_min = input(
+            "Enter minimum salary (leave blank if none): "
+        )
+
         jobs = get_jobs_from_countries(
             job_name,
-            job_location,
             countries,
             salary_min,
         )
@@ -107,26 +108,23 @@ def main():
 
     elif source == "3":
 
-        job_location = input("Enter job location: ")
-
-        salary_min = input(
-            "Enter minimum salary (leave blank if none): "
-        )
-
         countries = choose_countries()
 
         if countries is None:
             return
 
+        salary_min = input(
+            "Enter minimum salary (leave blank if none): "
+        )
+
         print(
             "\nNote:"
-            "\nLocation and salary filters apply only to Adzuna."
+            "\nCountry and salary filters apply only to Adzuna."
             "\nRemotive searches remote jobs using only the keyword.\n"
         )
 
         adzuna_jobs = get_jobs_from_countries(
             job_name,
-            job_location,
             countries,
             salary_min,
         )
