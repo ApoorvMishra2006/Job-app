@@ -1,8 +1,73 @@
 import sys
 
 from managers.job_manager import JobManager
-from services.adzuna_api import get_job_info
+from services.adzuna_api import get_jobs_from_countries
 from services.remotive_api import get_remotive_jobs
+from config import COUNTRIES, ALL_COUNTRIES
+
+
+def choose_countries():
+
+    print("\nChoose search mode")
+    print("1. Single Country")
+    print("2. Multiple Countries")
+    print("3. All Countries")
+
+    mode = input("\nChoice: ")
+
+    if mode == "1":
+
+        print("\nChoose country:\n")
+
+        for number, (name, code) in COUNTRIES.items():
+            print(f"{number}. {name}")
+
+        choice = input("\nChoice: ")
+
+        if choice not in COUNTRIES:
+            print("Invalid country.")
+            return None
+
+        return [COUNTRIES[choice][1]]
+
+    elif mode == "2":
+
+        print("\nChoose countries:\n")
+
+        for number, (name, code) in COUNTRIES.items():
+            print(f"{number}. {name}")
+
+        choices = input(
+            "\nEnter country numbers separated by commas: "
+        )
+
+        selected = []
+
+        for choice in choices.split(","):
+
+            choice = choice.strip()
+
+            if choice in COUNTRIES:
+
+                selected.append(COUNTRIES[choice][1])
+
+        if not selected:
+
+            print("No valid countries selected.")
+            return None
+
+        return selected
+
+    elif mode == "3":
+
+        print("\nSearching all supported countries...\n")
+
+        return ALL_COUNTRIES
+
+    else:
+
+        print("Invalid choice.")
+        return None
 
 
 def main():
@@ -19,13 +84,20 @@ def main():
     if source == "1":
 
         job_location = input("Enter job location: ")
-        country_name = input("Enter country code (us/in/gb): ")
-        salary_min = input("Enter minimum salary (leave blank if none): ")
 
-        jobs = get_job_info(
+        salary_min = input(
+            "Enter minimum salary (leave blank if none): "
+        )
+
+        countries = choose_countries()
+
+        if countries is None:
+            return
+
+        jobs = get_jobs_from_countries(
             job_name,
             job_location,
-            country_name,
+            countries,
             salary_min,
         )
 
@@ -36,19 +108,26 @@ def main():
     elif source == "3":
 
         job_location = input("Enter job location: ")
-        country_name = input("Enter country code (us/in/gb): ")
-        salary_min = input("Enter minimum salary (leave blank if none): ")
+
+        salary_min = input(
+            "Enter minimum salary (leave blank if none): "
+        )
+
+        countries = choose_countries()
+
+        if countries is None:
+            return
 
         print(
             "\nNote:"
-            "\nLocation, country and salary filters apply only to Adzuna."
+            "\nLocation and salary filters apply only to Adzuna."
             "\nRemotive searches remote jobs using only the keyword.\n"
         )
 
-        adzuna_jobs = get_job_info(
+        adzuna_jobs = get_jobs_from_countries(
             job_name,
             job_location,
-            country_name,
+            countries,
             salary_min,
         )
 
@@ -80,7 +159,9 @@ def main():
 
             while True:
 
-                applied = input("Press 1 to apply, 0 to skip or q to exit: ")
+                applied = input(
+                    "Press 1 to apply, 0 to skip or q to exit: "
+                )
 
                 if applied in ["0", "1", "q"]:
                     break

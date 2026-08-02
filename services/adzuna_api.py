@@ -44,5 +44,24 @@ def get_job_info(search_term, location, country, salary_min):
         return jobs
 
     except requests.exceptions.RequestException:
-        print("Could not connect to Adzuna.")
+
+        print(f"Could not connect to Adzuna ({country}).")
         return []
+
+
+def get_jobs_from_countries(search_term, location, countries, salary_min):
+
+    all_jobs = []
+
+    for country in countries:
+
+        jobs = get_job_info(
+            search_term,
+            location,
+            country,
+            salary_min,
+        )
+
+        all_jobs.extend(jobs)
+
+    return all_jobs
