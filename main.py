@@ -25,7 +25,6 @@ def choose_countries():
         choice = input("\nChoice: ")
 
         if choice not in COUNTRIES:
-
             print("Invalid country.")
             return None
 
@@ -56,7 +55,6 @@ def choose_countries():
                     selected.append(code)
 
         if not selected:
-
             print("No valid countries selected.")
             return None
 
@@ -83,7 +81,10 @@ def main():
     print("2. Remotive (remote jobs)")
     print("3. Both")
 
-    source = input("\nChoice (1/2/3): ")
+    source = input("\nChoice: ")
+
+    page = 1
+    all_remotive_jobs = []
 
     if source == "1":
 
@@ -96,15 +97,9 @@ def main():
             "Enter minimum salary (leave blank if none): "
         )
 
-        jobs = get_jobs_from_countries(
-            job_name,
-            countries,
-            salary_min,
-        )
-
     elif source == "2":
 
-        jobs = get_remotive_jobs(job_name)
+        all_remotive_jobs = get_remotive_jobs(job_name)
 
     elif source == "3":
 
@@ -123,54 +118,115 @@ def main():
             "\nRemotive searches remote jobs using only the keyword.\n"
         )
 
-        adzuna_jobs = get_jobs_from_countries(
-            job_name,
-            countries,
-            salary_min,
-        )
-
-        remotive_jobs = get_remotive_jobs(job_name)
-
-        jobs = adzuna_jobs + remotive_jobs
+        all_remotive_jobs = get_remotive_jobs(job_name)
 
     else:
 
         print("Invalid choice.")
         return
-
+    
     manager = JobManager()
     manager.load_applied_jobs()
 
-    if not jobs:
+    while True:
 
-        print("No jobs found.")
+        if source == "1":
 
-    else:
+            jobs = get_jobs_from_countries(
+                job_name,
+                countries,
+                salary_min,
+                page,
+            )
 
-        print("\nJobs found:\n")
 
-        for i, job in enumerate(jobs, start=1):
+        elif source == "2":
 
-            manager.add_job(job)
+            start = (page - 1) * 50
+            end = start + 50
 
-            job.display(i)
+            jobs = all_remotive_jobs[start:end]
 
-            while True:
 
-                applied = input(
-                    "Press 1 to apply, 0 to skip or q to exit: "
-                )
+        elif source == "3":
 
-                if applied in ["0", "1", "q"]:
-                    break
+            adzuna_jobs = get_jobs_from_countries(
+                job_name,
+                countries,
+                salary_min,
+                page,
+            )
 
-                print("You have to press either 1, 0 or q.")
+            start = (page - 1) * 50
+            end = start + 50
 
-            if applied == "1":
+            remotive_jobs = all_remotive_jobs[start:end]
 
-                manager.apply_job(job)
+            jobs = adzuna_jobs + remotive_jobs
 
-            elif applied == "q":
+        if not jobs:
+
+            print("\nNo jobs found on this page.")
+
+        else:
+
+            print(f"\n========== PAGE {page} ==========\n")
+
+            for i, job in enumerate(jobs, start=1):
+
+                manager.add_job(job)
+
+                job.display(i)
+
+                while True:
+
+                    applied = input(
+                        "Press 1 to apply, 0 to skip or q to exit: "
+                    )
+
+                    if applied in ["0", "1", "q"]:
+                        break
+
+                    print("You have to press either 1, 0 or q.")
+
+                if applied == "1":
+
+                    manager.apply_job(job)
+
+                elif applied == "q":
+
+                    print("Exiting the program...")
+                    manager.show_applied_jobs()
+                    sys.exit()
+
+                else:
+
+                    print("Skipped!")
+
+        print("\nCurrent page:", page)
+        print("n - Next page")
+        print("p - Previous page")
+        print("q - Quit")
+
+        while True:
+
+            nav = input("\nChoice: ").lower()
+
+            if nav == "n":
+
+                page += 1
+                break
+
+            elif nav == "p":
+
+                if page > 1:
+                    page -= 1
+                else:
+                    print("Already on the first page.")
+
+                break
+
+            elif nav == "q":
 
                 print("Exiting the program...")
                 manager.show_applied_jobs()
@@ -178,10 +234,6 @@ def main():
 
             else:
 
-                print("Skipped!")
-
-    manager.show_applied_jobs()
-
-
+                print("Invalid choice.")
 if __name__ == "__main__":
     main()

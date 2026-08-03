@@ -4,15 +4,15 @@ from config import APP_ID, APP_KEY, RESULTS_PER_PAGE
 from models.job import Job
 
 
-def get_job_info(search_term, country, salary_min):
+def get_job_info(search_term, country, salary_min, page):
 
-    base_url = f"https://api.adzuna.com/v1/api/jobs/{country}/search/1"
+    base_url = f"https://api.adzuna.com/v1/api/jobs/{country}/search/{page}"
 
     params = {
         "app_id": APP_ID,
         "app_key": APP_KEY,
         "what": search_term,
-        "results_per_page": RESULTS_PER_PAGE
+        "results_per_page": RESULTS_PER_PAGE,
     }
 
     if salary_min:
@@ -48,7 +48,7 @@ def get_job_info(search_term, country, salary_min):
         return []
 
 
-def get_jobs_from_countries(search_term, countries, salary_min):
+def get_jobs_from_countries(search_term, countries, salary_min, page):
 
     all_jobs = []
 
@@ -57,7 +57,8 @@ def get_jobs_from_countries(search_term, countries, salary_min):
         jobs = get_job_info(
             search_term,
             country,
-            salary_min
+            salary_min,
+            page,
         )
 
         all_jobs.extend(jobs)
