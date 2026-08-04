@@ -4,6 +4,7 @@ from managers.job_manager import JobManager
 from services.adzuna_api import get_jobs_from_countries
 from services.remotive_api import get_remotive_jobs
 from config import COUNTRIES, ALL_COUNTRIES
+from services.job_utils import remove_duplicate_jobs
 
 
 def choose_countries():
@@ -132,11 +133,13 @@ def main():
 
         if source == "1":
 
-            jobs = get_jobs_from_countries(
-                job_name,
-                countries,
-                salary_min,
-                page,
+            jobs = remove_duplicate_jobs(
+                get_jobs_from_countries(
+                    job_name,
+                    countries,
+                    salary_min,
+                    page,
+                )
             )
 
 
@@ -145,8 +148,9 @@ def main():
             start = (page - 1) * 50
             end = start + 50
 
-            jobs = all_remotive_jobs[start:end]
-
+            jobs = remove_duplicate_jobs(
+                all_remotive_jobs[start:end]
+            )
 
         elif source == "3":
 
@@ -162,7 +166,9 @@ def main():
 
             remotive_jobs = all_remotive_jobs[start:end]
 
-            jobs = adzuna_jobs + remotive_jobs
+            jobs = remove_duplicate_jobs(
+            adzuna_jobs + remotive_jobs
+            )
 
         if not jobs:
 
