@@ -3,7 +3,8 @@ from dotenv import load_dotenv
 
 load_dotenv()
 
-FILE_PATH = r"C:\Users\Apoorv Mishra\Desktop\Apoorv_Py\JobApp\data\applied.json"
+BASE_DIR = os.path.dirname(os.path.abspath(__file__))
+FILE_PATH = os.path.join(BASE_DIR, "data", "applied.json")
 
 APP_ID = os.getenv("APP_ID")
 APP_KEY = os.getenv("APP_KEY")
