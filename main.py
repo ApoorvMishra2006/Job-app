@@ -9,12 +9,19 @@ from services.job_utils import remove_duplicate_jobs
 
 def choose_countries():
 
-    print("\nChoose search mode")
-    print("1. Single Country")
-    print("2. Multiple Countries")
-    print("3. All Countries")
+    while True:
 
-    mode = input("\nChoice: ")
+        print("\nChoose search mode")
+        print("1. Single Country")
+        print("2. Multiple Countries")
+        print("3. All Countries")
+
+        mode = input("\nChoice: ")
+
+        if mode in ["1", "2", "3"]:
+            break
+
+        print("Please enter 1, 2 or 3.")
 
     if mode == "1":
 
@@ -23,11 +30,14 @@ def choose_countries():
         for number, (name, code) in COUNTRIES.items():
             print(f"{number}. {name}")
 
-        choice = input("\nChoice: ")
+        while True:
 
-        if choice not in COUNTRIES:
-            print("Invalid country.")
-            return None
+            choice = input("\nChoice: ")
+
+            if choice in COUNTRIES:
+                break
+
+            print("Please enter a valid country number.")
 
         return [COUNTRIES[choice][1]]
 
@@ -55,9 +65,27 @@ def choose_countries():
                 if code not in selected:
                     selected.append(code)
 
-        if not selected:
-            print("No valid countries selected.")
-            return None
+        while not selected:
+
+            choices = input(
+                "\nEnter country numbers separated by commas: "
+            )
+
+            selected = []
+
+            for choice in choices.split(","):
+
+                choice = choice.strip()
+
+                if choice in COUNTRIES:
+
+                    code = COUNTRIES[choice][1]
+
+                    if code not in selected:
+                        selected.append(code)
+
+            if not selected:
+                print("Please enter at least one valid country.")
 
         return selected
 
@@ -75,14 +103,28 @@ def choose_countries():
 
 def main():
 
-    job_name = input("Enter job keyword: ")
+    while True:
+
+        job_name = input("Enter job keyword: ").strip()
+
+        if job_name:
+            break
+
+    print("Job keyword cannot be empty.")
 
     print("\nChoose job source")
     print("1. Adzuna (location-based jobs)")
     print("2. Remotive (remote jobs)")
     print("3. Both")
 
-    source = input("\nChoice: ")
+    while True:
+
+        source = input("\nChoice: ")
+
+        if source in ["1", "2", "3"]:
+            break
+
+        print("Please enter 1, 2 or 3.")
 
     page = 1
     all_remotive_jobs = []
@@ -109,9 +151,19 @@ def main():
         if countries is None:
             return
 
-        salary_min = input(
-            "Enter minimum salary (leave blank if none): "
-        )
+        while True:
+
+            salary_min = input(
+                "Enter minimum salary (leave blank if none): "
+            ).strip()
+
+            if salary_min == "":
+                break
+
+            if salary_min.isdigit():
+                break
+
+            print("Please enter a valid salary.")
 
         print(
             "\nNote:"
