@@ -33,3 +33,24 @@ A Python-based job aggregation application that searches jobs from multiple job 
 * python-dotenv
 
 ---
+Project Structure
+JobApp/
+│
+├── config.py
+├── main.py
+├── .env
+├── README.md
+│
+├── data/
+│   └── applied.json
+│
+├── managers/
+│   └── job_manager.py
+│
+├── models/
+│   └── job.py
+│
+├── services/
+│   ├── adzuna_api.py
+│   ├── remotive_api.py
+│   └── job_utils.py
