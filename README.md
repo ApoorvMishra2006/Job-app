@@ -33,7 +33,9 @@ A Python-based job aggregation application that searches jobs from multiple job 
 * python-dotenv
 
 ---
-Project Structure
+
+## Project Structure
+
 JobApp/
 │
 ├── config.py
@@ -54,3 +56,18 @@ JobApp/
 │   ├── adzuna_api.py
 │   ├── remotive_api.py
 │   └── job_utils.py
+
+---
+
+## Usage
+
+Enter a job keyword.
+Choose a job source:
+Adzuna
+Remotive
+Both
+Select one or more countries (Adzuna).
+Optionally specify a minimum salary.
+Browse jobs page by page.
+Apply to jobs directly from the terminal.
+View previously applied jobs when exiting.
