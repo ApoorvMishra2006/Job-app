@@ -71,3 +71,22 @@ Optionally specify a minimum salary.
 Browse jobs page by page.
 Apply to jobs directly from the terminal.
 View previously applied jobs when exiting.
+
+---
+
+## APIs Used
+
+Adzuna API
+
+Used for location-based job listings with support for:
+
+Multiple countries
+Salary filtering
+Pagination
+Remotive API
+
+Used for remote job listings with support for:
+
+Keyword search
+Pagination
+Remote opportunities
