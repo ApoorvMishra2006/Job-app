@@ -90,3 +90,15 @@ Used for remote job listings with support for:
 Keyword search
 Pagination
 Remote opportunities
+
+---
+
+## Future Improvements
+
+SQLite database instead of JSON storage
+Streamlit web interface
+Advanced filtering and sorting
+Search history
+Saved jobs
+Improved logging
+Unit tests
