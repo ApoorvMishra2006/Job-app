@@ -101,4 +101,10 @@ Advanced filtering and sorting
 Search history
 Saved jobs
 Improved logging
-Unit tests
+Unit tests 
+
+---
+
+## Author
+
+Apoorv Mishra
