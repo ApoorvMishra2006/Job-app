@@ -4,13 +4,15 @@ from dotenv import load_dotenv
 load_dotenv()
 
 BASE_DIR = os.path.dirname(os.path.abspath(__file__))
-FILE_PATH = os.path.join(BASE_DIR, "data", "applied.json")
+
+DATA_DIR = os.path.join(BASE_DIR, "data")
+
+DATABASE_PATH = os.path.join(DATA_DIR, "jobs.db")
 
 APP_ID = os.getenv("APP_ID")
 APP_KEY = os.getenv("APP_KEY")
 
 RESULTS_PER_PAGE = 50
-
 
 COUNTRIES = {
     "1": ("India", "in"),
