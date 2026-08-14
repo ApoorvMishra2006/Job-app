@@ -23,14 +23,17 @@ A Python-based job aggregation application that searches jobs from multiple job 
 
 ## Technologies Used
 
-* Python
-* Requests
-* JSON
-* REST APIs
-* Adzuna API
-* Remotive API
-* Git & GitHub
-* python-dotenv
+- **Python**
+- **SQLite**
+- **Requests**
+- **python-dotenv**
+- **REST APIs**
+- **JSON**
+- **Adzuna API**
+- **Remotive API**
+- **Git**
+- **GitHub**
+
 
 ---
 
@@ -44,7 +47,7 @@ JobApp/
 ├── README.md
 │
 ├── data/
-│   └── applied.json
+│   └── jobs.db
 │
 ├── managers/
 │   └── job_manager.py
@@ -52,10 +55,10 @@ JobApp/
 ├── models/
 │   └── job.py
 │
-├── services/
-│   ├── adzuna_api.py
-│   ├── remotive_api.py
-│   └── job_utils.py
+└── services/
+    ├── adzuna_api.py
+    ├── remotive_api.py
+    └── job_utils.py
 
 ---
 
@@ -95,7 +98,6 @@ Remote opportunities
 
 ## Future Improvements
 
-SQLite database instead of JSON storage
 Streamlit web interface
 Advanced filtering and sorting
 Search history
