@@ -5,6 +5,7 @@ from services.adzuna_api import get_jobs_from_countries
 from services.remotive_api import get_remotive_jobs
 from config import COUNTRIES, ALL_COUNTRIES
 from services.job_utils import remove_duplicate_jobs
+from utils.logger import logger
 
 
 def choose_countries():
@@ -35,37 +36,18 @@ def choose_countries():
             choice = input("\nChoice: ")
 
             if choice in COUNTRIES:
-                break
+                return [COUNTRIES[choice][1]]
 
             print("Please enter a valid country number.")
 
-        return [COUNTRIES[choice][1]]
+    print("\nChoose countries:\n")
 
-    elif mode == "2":
-
-        print("\nChoose countries:\n")
+    if mode == "2":
 
         for number, (name, code) in COUNTRIES.items():
             print(f"{number}. {name}")
 
-        choices = input(
-            "\nEnter country numbers separated by commas: "
-        )
-
-        selected = []
-
-        for choice in choices.split(","):
-
-            choice = choice.strip()
-
-            if choice in COUNTRIES:
-
-                code = COUNTRIES[choice][1]
-
-                if code not in selected:
-                    selected.append(code)
-
-        while not selected:
+        while True:
 
             choices = input(
                 "\nEnter country numbers separated by commas: "
@@ -84,21 +66,14 @@ def choose_countries():
                     if code not in selected:
                         selected.append(code)
 
-            if not selected:
-                print("Please enter at least one valid country.")
+            if selected:
+                return selected
 
-        return selected
+            print("Please enter at least one valid country.")
 
-    elif mode == "3":
+    print("\nSearching all supported countries...\n")
 
-        print("\nSearching all supported countries...\n")
-
-        return ALL_COUNTRIES
-
-    else:
-
-        print("Invalid choice.")
-        return None
+    return ALL_COUNTRIES
 
 
 def main():
@@ -108,9 +83,12 @@ def main():
         job_name = input("Enter job keyword: ").strip()
 
         if job_name:
+            logger.info(
+                f"New job search started: keyword='{job_name}'"
+            )
             break
 
-    print("Job keyword cannot be empty.")
+        print("Job keyword cannot be empty.")
 
     print("\nChoose job source")
     print("1. Adzuna (location-based jobs)")
@@ -133,23 +111,27 @@ def main():
 
         countries = choose_countries()
 
-        if countries is None:
-            return
+        while True:
 
-        salary_min = input(
-            "Enter minimum salary (leave blank if none): "
-        )
+            salary_min = input(
+                "Enter minimum salary (leave blank if none): "
+            ).strip()
+
+            if salary_min == "":
+                break
+
+            if salary_min.isdigit():
+                break
+
+            print("Please enter a valid salary.")
 
     elif source == "2":
 
         all_remotive_jobs = get_remotive_jobs(job_name)
 
-    elif source == "3":
+    else:
 
         countries = choose_countries()
-
-        if countries is None:
-            return
 
         while True:
 
@@ -173,11 +155,6 @@ def main():
 
         all_remotive_jobs = get_remotive_jobs(job_name)
 
-    else:
-
-        print("Invalid choice.")
-        return
-    
     manager = JobManager()
     manager.load_applied_jobs()
 
@@ -185,26 +162,21 @@ def main():
 
         if source == "1":
 
-            jobs = remove_duplicate_jobs(
-                get_jobs_from_countries(
-                    job_name,
-                    countries,
-                    salary_min,
-                    page,
-                )
+            jobs = get_jobs_from_countries(
+                job_name,
+                countries,
+                salary_min,
+                page,
             )
-
 
         elif source == "2":
 
             start = (page - 1) * 50
             end = start + 50
 
-            jobs = remove_duplicate_jobs(
-                all_remotive_jobs[start:end]
-            )
+            jobs = all_remotive_jobs[start:end]
 
-        elif source == "3":
+        else:
 
             adzuna_jobs = get_jobs_from_countries(
                 job_name,
@@ -218,9 +190,9 @@ def main():
 
             remotive_jobs = all_remotive_jobs[start:end]
 
-            jobs = remove_duplicate_jobs(
-            adzuna_jobs + remotive_jobs
-            )
+            jobs = adzuna_jobs + remotive_jobs
+
+        jobs = remove_duplicate_jobs(jobs)
 
         if not jobs:
 
@@ -254,6 +226,7 @@ def main():
                 elif applied == "q":
 
                     print("Exiting the program...")
+                    logger.info("Application exited by user.")
                     manager.show_applied_jobs()
                     sys.exit()
 
@@ -287,11 +260,14 @@ def main():
             elif nav == "q":
 
                 print("Exiting the program...")
+                logger.info("Application exited by user.")
                 manager.show_applied_jobs()
                 sys.exit()
 
             else:
 
                 print("Invalid choice.")
+
+
 if __name__ == "__main__":
     main()

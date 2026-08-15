@@ -1,9 +1,9 @@
-import json
 import os
 import sqlite3
 
 from config import DATABASE_PATH
 from models.job import Job
+from utils.logger import logger
 
 
 class JobManager:
@@ -39,6 +39,8 @@ class JobManager:
 
         self.connection.commit()
 
+        logger.info("SQLite database initialized.")
+
     def load_applied_jobs(self):
 
         cursor = self.connection.cursor()
@@ -60,9 +62,17 @@ class JobManager:
                 "apply_link": row[2]
             })
 
+        logger.info(
+            f"Loaded {len(self.applied_jobs)} applied job(s)."
+        )
+
     def add_job(self, job: Job) -> None:
 
         self.jobs.append(job)
+
+        logger.info(
+            f"Job added to current session: '{job.title}'"
+        )
 
     def apply_job(self, job: Job) -> None:
 
@@ -78,27 +88,49 @@ class JobManager:
 
         if existing_job:
 
+            logger.info(
+                f"Duplicate application prevented: "
+                f"'{job.title}'"
+            )
+
             print("Already applied!")
             return
 
-        cursor.execute("""
-            INSERT INTO applied_jobs (
-                title,
-                description,
-                apply_link
+        try:
+
+            cursor.execute("""
+                INSERT INTO applied_jobs (
+                    title,
+                    description,
+                    apply_link
+                )
+                VALUES (?, ?, ?)
+            """, (
+                job.title,
+                job.description,
+                job.apply_link
+            ))
+
+            self.connection.commit()
+
+            self.load_applied_jobs()
+
+            logger.info(
+                f"Job marked as applied: '{job.title}'"
             )
-            VALUES (?, ?, ?)
-        """, (
-            job.title,
-            job.description,
-            job.apply_link
-        ))
 
-        self.connection.commit()
+            print("Applied!!")
 
-        self.load_applied_jobs()
+        except sqlite3.Error as error:
 
-        print("Applied!!")
+            self.connection.rollback()
+
+            logger.error(
+                f"Database error while applying to "
+                f"'{job.title}': {error}"
+            )
+
+            print("Could not save the job.")
 
     def show_applied_jobs(self):
 
@@ -128,3 +160,5 @@ class JobManager:
         if self.connection:
 
             self.connection.close()
+
+            logger.info("SQLite database connection closed.")

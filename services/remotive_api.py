@@ -1,6 +1,7 @@
 import requests
 
 from models.job import Job
+from utils.logger import logger
 
 
 def get_remotive_jobs(search_term):
@@ -10,6 +11,11 @@ def get_remotive_jobs(search_term):
     params = {
         "search": search_term
     }
+
+    logger.info(
+        f"Remotive search started: "
+        f"keyword='{search_term}'"
+    )
 
     try:
 
@@ -28,7 +34,10 @@ def get_remotive_jobs(search_term):
         for job in data.get("jobs", []):
 
             job_obj = Job(
-                title=job.get("title", "Unknown"),
+                title=job.get(
+                    "title",
+                    "Unknown"
+                ),
                 company=job.get(
                     "company_name",
                     "Unknown"
@@ -50,23 +59,41 @@ def get_remotive_jobs(search_term):
 
             jobs.append(job_obj)
 
+        logger.info(
+            f"Remotive returned {len(jobs)} jobs"
+        )
+
         return jobs
 
     except requests.exceptions.Timeout:
 
+        logger.error(
+            "Remotive request timed out."
+        )
+
         print(
             "Remotive request timed out."
         )
+
         return []
 
     except requests.exceptions.ConnectionError:
 
+        logger.error(
+            "Could not connect to Remotive."
+        )
+
         print(
             "Could not connect to Remotive."
         )
+
         return []
 
     except requests.exceptions.HTTPError as error:
+
+        logger.error(
+            f"Remotive HTTP error: {error}"
+        )
 
         if response.status_code == 429:
 
@@ -92,14 +119,24 @@ def get_remotive_jobs(search_term):
 
     except requests.exceptions.JSONDecodeError:
 
+        logger.error(
+            "Remotive returned invalid JSON."
+        )
+
         print(
             "Remotive returned an invalid response."
         )
+
         return []
 
     except requests.exceptions.RequestException as error:
 
+        logger.error(
+            f"Remotive request failed: {error}"
+        )
+
         print(
             f"Remotive request failed: {error}"
         )
+
         return []
