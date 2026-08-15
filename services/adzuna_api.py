@@ -20,7 +20,12 @@ def get_job_info(search_term, country, salary_min, page):
 
     try:
 
-        response = requests.get(base_url, params=params, timeout=5)
+        response = requests.get(
+            base_url,
+            params=params,
+            timeout=5
+        )
+
         response.raise_for_status()
 
         data = response.json()
@@ -31,8 +36,14 @@ def get_job_info(search_term, country, salary_min, page):
 
             job_obj = Job(
                 title=job.get("title", "Unknown"),
-                company=job.get("company", {}).get("display_name", "Unknown"),
-                location=job.get("location", {}).get("display_name", "Unknown"),
+                company=job.get("company", {}).get(
+                    "display_name",
+                    "Unknown"
+                ),
+                location=job.get("location", {}).get(
+                    "display_name",
+                    "Unknown"
+                ),
                 description=job.get("description", ""),
                 apply_link=job.get("redirect_url", ""),
                 source="Adzuna"
@@ -42,13 +53,74 @@ def get_job_info(search_term, country, salary_min, page):
 
         return jobs
 
-    except requests.exceptions.RequestException:
+    except requests.exceptions.Timeout:
 
-        print(f"Could not connect to Adzuna ({country}).")
+        print(
+            f"Adzuna request timed out ({country})."
+        )
+        return []
+
+    except requests.exceptions.ConnectionError:
+
+        print(
+            f"Could not connect to Adzuna ({country})."
+        )
+        return []
+
+    except requests.exceptions.HTTPError as error:
+
+        if response.status_code == 401:
+            print(
+                f"Adzuna authentication failed ({country}). "
+                "Check your API credentials."
+            )
+
+        elif response.status_code == 403:
+            print(
+                f"Adzuna access forbidden ({country})."
+            )
+
+        elif response.status_code == 429:
+            print(
+                f"Adzuna rate limit reached ({country}). "
+                "Please try again later."
+            )
+
+        elif response.status_code >= 500:
+            print(
+                f"Adzuna server error ({country}). "
+                "Please try again later."
+            )
+
+        else:
+            print(
+                f"Adzuna request failed ({country}): "
+                f"{error}"
+            )
+
+        return []
+
+    except requests.exceptions.JSONDecodeError:
+
+        print(
+            f"Adzuna returned an invalid response ({country})."
+        )
+        return []
+
+    except requests.exceptions.RequestException as error:
+
+        print(
+            f"Adzuna request failed ({country}): {error}"
+        )
         return []
 
 
-def get_jobs_from_countries(search_term, countries, salary_min, page):
+def get_jobs_from_countries(
+    search_term,
+    countries,
+    salary_min,
+    page
+):
 
     all_jobs = []
 
