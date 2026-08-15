@@ -14,9 +14,11 @@ A Python-based job aggregation application that searches jobs from multiple job 
 * Filter jobs by minimum salary (Adzuna)
 * Pagination support for both Adzuna and Remotive results
 * Duplicate job detection across APIs
-* Track applied jobs
+* Track applied jobs using SQLite
 * Prevent duplicate applications
 * Environment variable support for API credentials
+* Input validation
+* Application logging
 * Modular project structure
 
 ---
@@ -33,7 +35,6 @@ A Python-based job aggregation application that searches jobs from multiple job 
 - **Remotive API**
 - **Git**
 - **GitHub**
-
 
 ---
 
@@ -55,55 +56,64 @@ JobApp/
 ├── models/
 │   └── job.py
 │
-└── services/
-    ├── adzuna_api.py
-    ├── remotive_api.py
-    └── job_utils.py
+├── services/
+│   ├── adzuna_api.py
+│   ├── remotive_api.py
+│   └── job_utils.py
+│
+└── utils/
+    └── logger.py
 
 ---
 
 ## Usage
 
 Enter a job keyword.
+
 Choose a job source:
-Adzuna
-Remotive
+Adzuna  
+Remotive  
 Both
+
 Select one or more countries (Adzuna).
+
 Optionally specify a minimum salary.
+
 Browse jobs page by page.
+
 Apply to jobs directly from the terminal.
+
 View previously applied jobs when exiting.
 
 ---
 
 ## APIs Used
 
-Adzuna API
+### Adzuna API
 
 Used for location-based job listings with support for:
 
-Multiple countries
-Salary filtering
+Multiple countries  
+Salary filtering  
 Pagination
-Remotive API
+
+### Remotive API
 
 Used for remote job listings with support for:
 
-Keyword search
-Pagination
+Keyword search  
+Pagination  
 Remote opportunities
 
 ---
 
 ## Future Improvements
 
-Streamlit web interface
-Advanced filtering and sorting
-Search history
-Saved jobs
-Improved logging
-Unit tests 
+Streamlit web interface  
+Advanced filtering and sorting  
+Search history  
+Saved jobs  
+Unit tests
 
 ---
 
