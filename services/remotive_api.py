@@ -91,18 +91,34 @@ def get_remotive_jobs(search_term):
 
     except requests.exceptions.HTTPError as error:
 
+        status_code = error.response.status_code
+
         logger.error(
-            f"Remotive HTTP error: {error}"
+            f"Remotive HTTP error "
+            f"status_code={status_code}: {error}"
         )
 
-        if response.status_code == 429:
+        if status_code == 401:
+
+            print(
+                "Remotive authentication failed. "
+                "Check the API credentials."
+            )
+
+        elif status_code == 403:
+
+            print(
+                "Remotive access forbidden."
+            )
+
+        elif status_code == 429:
 
             print(
                 "Remotive rate limit reached. "
                 "Please try again later."
             )
 
-        elif response.status_code >= 500:
+        elif status_code >= 500:
 
             print(
                 "Remotive server error. "
@@ -112,7 +128,8 @@ def get_remotive_jobs(search_term):
         else:
 
             print(
-                f"Remotive request failed: {error}"
+                f"Remotive request failed. "
+                f"HTTP status: {status_code}"
             )
 
         return []
