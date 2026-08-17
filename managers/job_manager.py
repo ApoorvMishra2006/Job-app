@@ -74,7 +74,7 @@ class JobManager:
             f"Job added to current session: '{job.title}'"
         )
 
-    def apply_job(self, job: Job) -> None:
+    def apply_job(self, job: Job) -> bool:
 
         cursor = self.connection.cursor()
 
@@ -89,49 +89,33 @@ class JobManager:
         if existing_job:
 
             logger.info(
-                f"Duplicate application prevented: "
-                f"'{job.title}'"
+                f"Job already applied: '{job.title}'"
             )
 
-            print("Already applied!")
-            return
+            return False
 
-        try:
-
-            cursor.execute("""
-                INSERT INTO applied_jobs (
-                    title,
-                    description,
-                    apply_link
-                )
-                VALUES (?, ?, ?)
-            """, (
-                job.title,
-                job.description,
-                job.apply_link
-            ))
-
-            self.connection.commit()
-
-            self.load_applied_jobs()
-
-            logger.info(
-                f"Job marked as applied: '{job.title}'"
+        cursor.execute("""
+            INSERT INTO applied_jobs (
+                title,
+                description,
+                apply_link
             )
+            VALUES (?, ?, ?)
+        """, (
+            job.title,
+            job.description,
+            job.apply_link
+        ))
 
-            print("Applied!!")
+        self.connection.commit()
 
-        except sqlite3.Error as error:
+        self.load_applied_jobs()
 
-            self.connection.rollback()
+        logger.info(
+            f"Job marked as applied: '{job.title}'"
+        )
 
-            logger.error(
-                f"Database error while applying to "
-                f"'{job.title}': {error}"
-            )
-
-            print("Could not save the job.")
-
+        return True
     def show_applied_jobs(self):
 
         print("\nThe applied jobs are:")
