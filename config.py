@@ -9,8 +9,24 @@ DATA_DIR = os.path.join(BASE_DIR, "data")
 
 DATABASE_PATH = os.path.join(DATA_DIR, "jobs.db")
 
-APP_ID = os.getenv("APP_ID")
-APP_KEY = os.getenv("APP_KEY")
+try:
+
+    import streamlit as st
+
+    APP_ID = st.secrets.get(
+        "APP_ID",
+        os.getenv("APP_ID")
+    )
+
+    APP_KEY = st.secrets.get(
+        "APP_KEY",
+        os.getenv("APP_KEY")
+    )
+
+except Exception:
+
+    APP_ID = os.getenv("APP_ID")
+    APP_KEY = os.getenv("APP_KEY")
 
 RESULTS_PER_PAGE = 50
 

@@ -469,3 +469,4 @@ else:
                 st.write(
                     f"**Link:** {job['apply_link']}"
                 )
+                
