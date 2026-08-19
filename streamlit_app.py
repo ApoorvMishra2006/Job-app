@@ -594,7 +594,6 @@ if page == "Search Jobs":
 
                     st.rerun()
 
-
 # --------------------------------------------------
 # Applied Jobs
 # --------------------------------------------------
@@ -634,5 +633,33 @@ else:
                 )
 
                 st.write(
-                    f"**Link:** {job['apply_link']}"
+                    f"**Company:** {job['company']}"
+                )
+
+                st.write(
+                    f"**Location:** {job['location']}"
+                )
+
+                st.write(
+                    f"**Source:** {job['source']}"
+                )
+
+                st.write(
+                    f"**Applied:** {job['applied_at']}"
+                )
+
+                description = job["description"]
+
+                if len(description) > 300:
+
+                    description = (
+                        description[:300]
+                        + "..."
+                    )
+
+                st.write(description)
+
+                st.link_button(
+                    "Open Job",
+                    job["apply_link"]
                 )
