@@ -24,31 +24,57 @@ class JobManager:
             exist_ok=True
         )
 
-        self.connection = sqlite3.connect(DATABASE_PATH)
+        self.connection = sqlite3.connect(
+            DATABASE_PATH
+        )
 
         cursor = self.connection.cursor()
 
         cursor.execute("""
+            CREATE TABLE IF NOT EXISTS users (
+                id INTEGER PRIMARY KEY AUTOINCREMENT,
+                username TEXT NOT NULL UNIQUE,
+                email TEXT NOT NULL UNIQUE,
+                password_hash TEXT NOT NULL,
+                password_salt TEXT NOT NULL
+            )
+        """)
+
+        cursor.execute("""
             CREATE TABLE IF NOT EXISTS applied_jobs (
                 id INTEGER PRIMARY KEY AUTOINCREMENT,
+                user_id INTEGER NOT NULL,
                 title TEXT NOT NULL,
                 description TEXT,
-                apply_link TEXT NOT NULL UNIQUE
+                apply_link TEXT NOT NULL,
+                UNIQUE(user_id, apply_link),
+                FOREIGN KEY(user_id)
+                    REFERENCES users(id)
+                    ON DELETE CASCADE
             )
         """)
 
         self.connection.commit()
 
-        logger.info("SQLite database initialized.")
+        logger.info(
+            "SQLite database initialized."
+        )
 
-    def load_applied_jobs(self):
+    def load_applied_jobs(self, user_id):
 
         cursor = self.connection.cursor()
 
-        cursor.execute("""
-            SELECT title, description, apply_link
+        cursor.execute(
+            """
+            SELECT
+                title,
+                description,
+                apply_link
             FROM applied_jobs
-        """)
+            WHERE user_id = ?
+            """,
+            (user_id,)
+        )
 
         rows = cursor.fetchall()
 
@@ -63,59 +89,76 @@ class JobManager:
             })
 
         logger.info(
-            f"Loaded {len(self.applied_jobs)} applied job(s)."
+            f"Loaded {len(self.applied_jobs)} "
+            f"applied job(s) for user_id={user_id}."
         )
 
-    def add_job(self, job: Job) -> None:
+    def add_job(self, job: Job):
 
         self.jobs.append(job)
 
         logger.info(
-            f"Job added to current session: '{job.title}'"
+            f"Job added to current session: "
+            f"'{job.title}'"
         )
 
-    def apply_job(self, job: Job) -> bool:
+    def apply_job(self, job, user_id):
 
         cursor = self.connection.cursor()
 
-        cursor.execute("""
+        cursor.execute(
+            """
             SELECT id
             FROM applied_jobs
-            WHERE apply_link = ?
-        """, (job.apply_link,))
+            WHERE user_id = ?
+            AND apply_link = ?
+            """,
+            (
+                user_id,
+                job.apply_link
+            )
+        )
 
         existing_job = cursor.fetchone()
 
         if existing_job:
 
             logger.info(
-                f"Job already applied: '{job.title}'"
+                f"Job already applied by user_id="
+                f"{user_id}: '{job.title}'"
             )
 
             return False
 
-        cursor.execute("""
+        cursor.execute(
+            """
             INSERT INTO applied_jobs (
+                user_id,
                 title,
                 description,
                 apply_link
             )
-            VALUES (?, ?, ?)
-        """, (
-            job.title,
-            job.description,
-            job.apply_link
-        ))
+            VALUES (?, ?, ?, ?)
+            """,
+            (
+                user_id,
+                job.title,
+                job.description,
+                job.apply_link
+            )
+        )
 
         self.connection.commit()
 
-        self.load_applied_jobs()
+        self.load_applied_jobs(user_id)
 
         logger.info(
-            f"Job marked as applied: '{job.title}'"
+            f"Job marked as applied by "
+            f"user_id={user_id}: '{job.title}'"
         )
 
         return True
+
     def show_applied_jobs(self):
 
         print("\nThe applied jobs are:")
@@ -131,12 +174,19 @@ class JobManager:
                 start=1
             ):
 
-                print(f"{i}. {job['title']}")
-                print(f"Link: {job['apply_link']}")
+                print(
+                    f"{i}. {job['title']}"
+                )
+
+                print(
+                    f"Link: {job['apply_link']}"
+                )
+
                 print(
                     f"Description: "
                     f"{job['description'][:100]}..."
                 )
+
                 print("-" * 60)
 
     def close(self):
@@ -145,4 +195,6 @@ class JobManager:
 
             self.connection.close()
 
-            logger.info("SQLite database connection closed.")
+            logger.info(
+                "SQLite database connection closed."
+            )
