@@ -13,6 +13,7 @@ class JobManager:
 
         self.jobs = []
         self.applied_jobs = []
+        self.saved_jobs = []
 
         self.connection = None
 
@@ -62,6 +63,7 @@ class JobManager:
         self.connection.commit()
 
         self.migrate_applied_jobs()
+        self.migrate_saved_jobs()
 
         logger.info(
             "SQLite database initialized."
@@ -164,6 +166,51 @@ class JobManager:
             "Applied jobs database migration completed."
         )
 
+    def migrate_saved_jobs(self):
+
+        cursor = self.connection.cursor()
+
+        cursor.execute("""
+            SELECT name
+            FROM sqlite_master
+            WHERE type = 'table'
+            AND name = 'saved_jobs'
+        """)
+
+        table_exists = cursor.fetchone()
+
+        if not table_exists:
+
+            cursor.execute("""
+                CREATE TABLE saved_jobs (
+                    id INTEGER PRIMARY KEY AUTOINCREMENT,
+                    user_id INTEGER NOT NULL,
+                    title TEXT NOT NULL,
+                    company TEXT,
+                    location TEXT,
+                    description TEXT,
+                    apply_link TEXT NOT NULL,
+                    source TEXT,
+                    saved_at TEXT NOT NULL,
+                    UNIQUE(user_id, apply_link),
+                    FOREIGN KEY(user_id)
+                        REFERENCES users(id)
+                        ON DELETE CASCADE
+                )
+            """)
+
+            self.connection.commit()
+
+            logger.info(
+                "Created saved_jobs table."
+            )
+
+        else:
+
+            logger.info(
+                "saved_jobs table already exists."
+            )
+
     def load_applied_jobs(self, user_id):
 
         cursor = self.connection.cursor()
@@ -206,6 +253,178 @@ class JobManager:
             f"applied job(s) for user_id={user_id}."
         )
 
+    def load_saved_jobs(self, user_id):
+
+        cursor = self.connection.cursor()
+
+        cursor.execute(
+            """
+            SELECT
+                title,
+                company,
+                location,
+                description,
+                apply_link,
+                source,
+                saved_at
+            FROM saved_jobs
+            WHERE user_id = ?
+            ORDER BY id DESC
+            """,
+            (user_id,)
+        )
+
+        rows = cursor.fetchall()
+
+        self.saved_jobs = []
+
+        for row in rows:
+
+            self.saved_jobs.append({
+                "title": row[0],
+                "company": row[1],
+                "location": row[2],
+                "description": row[3],
+                "apply_link": row[4],
+                "source": row[5],
+                "saved_at": row[6]
+            })
+
+        logger.info(
+            f"Loaded {len(self.saved_jobs)} "
+            f"saved job(s) for user_id={user_id}."
+        )
+
+    def is_job_saved(self, job, user_id):
+
+        cursor = self.connection.cursor()
+
+        cursor.execute(
+            """
+            SELECT id
+            FROM saved_jobs
+            WHERE user_id = ?
+            AND apply_link = ?
+            """,
+            (
+                user_id,
+                job.apply_link
+            )
+        )
+
+        if cursor.fetchone():
+
+            return True
+
+        cursor.execute(
+            """
+            SELECT id
+            FROM saved_jobs
+            WHERE user_id = ?
+            AND LOWER(TRIM(title)) = LOWER(TRIM(?))
+            AND LOWER(TRIM(company)) = LOWER(TRIM(?))
+            AND LOWER(TRIM(location)) = LOWER(TRIM(?))
+            """,
+            (
+                user_id,
+                job.title,
+                job.company,
+                job.location
+            )
+        )
+
+        return cursor.fetchone() is not None
+
+    def save_job(self, job, user_id):
+
+        if self.is_job_saved(
+            job,
+            user_id
+        ):
+
+            logger.info(
+                f"Job already saved by user_id="
+                f"{user_id}: '{job.title}'"
+            )
+
+            return False
+
+        saved_at = datetime.now().strftime(
+            "%Y-%m-%d %H:%M:%S"
+        )
+
+        cursor = self.connection.cursor()
+
+        cursor.execute(
+            """
+            INSERT INTO saved_jobs (
+                user_id,
+                title,
+                company,
+                location,
+                description,
+                apply_link,
+                source,
+                saved_at
+            )
+            VALUES (?, ?, ?, ?, ?, ?, ?, ?)
+            """,
+            (
+                user_id,
+                job.title,
+                job.company,
+                job.location,
+                job.description,
+                job.apply_link,
+                job.source,
+                saved_at
+            )
+        )
+
+        self.connection.commit()
+
+        self.load_saved_jobs(user_id)
+
+        logger.info(
+            f"Job saved by user_id="
+            f"{user_id}: '{job.title}'"
+        )
+
+        return True
+
+    def unsave_job(self, job, user_id):
+
+        cursor = self.connection.cursor()
+
+        cursor.execute(
+            """
+            DELETE FROM saved_jobs
+            WHERE user_id = ?
+            AND apply_link = ?
+            """,
+            (
+                user_id,
+                job.apply_link
+            )
+        )
+
+        deleted = cursor.rowcount
+
+        self.connection.commit()
+
+        self.load_saved_jobs(user_id)
+
+        if deleted:
+
+            logger.info(
+                f"Job unsaved by user_id="
+                f"{user_id}: '{job.title}'"
+            )
+
+            return True
+
+        return False
+
     def add_job(self, job: Job):
 
         self.jobs.append(job)
@@ -219,7 +438,6 @@ class JobManager:
 
         cursor = self.connection.cursor()
 
-        # Check by exact apply link.
         cursor.execute(
             """
             SELECT id
@@ -244,7 +462,6 @@ class JobManager:
 
             return False
 
-        # Check by job identity.
         cursor.execute(
             """
             SELECT id

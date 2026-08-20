@@ -182,6 +182,7 @@ if "current_source" not in st.session_state:
 user_id = st.session_state.user["id"]
 
 manager.load_applied_jobs(user_id)
+manager.load_saved_jobs(user_id)
 
 
 # --------------------------------------------------
@@ -215,6 +216,8 @@ if st.sidebar.button("Logout"):
 
     st.session_state.search_performed = False
 
+    st.session_state.page = 1
+
     st.rerun()
 
 
@@ -222,6 +225,7 @@ page = st.sidebar.radio(
     "Navigation",
     [
         "Search Jobs",
+        "Saved Jobs",
         "Applied Jobs"
     ]
 )
@@ -503,8 +507,13 @@ if page == "Search Jobs":
                         in manager.applied_jobs
                     )
 
-                    action_col, status_col = (
-                        st.columns([1, 2])
+                    already_saved = manager.is_job_saved(
+                        job,
+                        user_id
+                    )
+
+                    action_col, save_col, status_col = (
+                        st.columns([1, 1, 2])
                     )
 
                     with action_col:
@@ -513,6 +522,46 @@ if page == "Search Jobs":
                             "Open Job",
                             job.apply_link
                         )
+
+                    with save_col:
+
+                        if already_saved:
+
+                            if st.button(
+                                "⭐ Saved",
+                                key=(
+                                    f"unsave_{index}_"
+                                    f"{job.apply_link}"
+                                )
+                            ):
+
+                                manager.unsave_job(
+                                    job,
+                                    user_id
+                                )
+
+                                st.rerun()
+
+                        else:
+
+                            if st.button(
+                                "☆ Save",
+                                key=(
+                                    f"save_{index}_"
+                                    f"{job.apply_link}"
+                                )
+                            ):
+
+                                if manager.save_job(
+                                    job,
+                                    user_id
+                                ):
+
+                                    st.success(
+                                        "Job saved!"
+                                    )
+
+                                    st.rerun()
 
                     with status_col:
 
@@ -593,6 +642,112 @@ if page == "Search Jobs":
                     st.session_state.page += 1
 
                     st.rerun()
+
+
+# --------------------------------------------------
+# Saved Jobs
+# --------------------------------------------------
+
+elif page == "Saved Jobs":
+
+    st.header("⭐ Saved Jobs")
+
+    manager.load_saved_jobs(
+        user_id
+    )
+
+    if not manager.saved_jobs:
+
+        st.info(
+            "You haven't saved any jobs yet."
+        )
+
+    else:
+
+        st.success(
+            f"You have saved "
+            f"{len(manager.saved_jobs)} job(s)."
+        )
+
+        for index, job in enumerate(
+            manager.saved_jobs,
+            start=1
+        ):
+
+            with st.container(
+                border=True
+            ):
+
+                st.subheader(
+                    f"{index}. {job['title']}"
+                )
+
+                st.write(
+                    f"**Company:** {job['company']}"
+                )
+
+                st.write(
+                    f"**Location:** {job['location']}"
+                )
+
+                st.write(
+                    f"**Source:** {job['source']}"
+                )
+
+                st.write(
+                    f"**Saved:** {job['saved_at']}"
+                )
+
+                description = job["description"]
+
+                if len(description) > 300:
+
+                    description = (
+                        description[:300]
+                        + "..."
+                    )
+
+                st.write(description)
+
+                action_col, remove_col = (
+                    st.columns([1, 1])
+                )
+
+                with action_col:
+
+                    st.link_button(
+                        "Open Job",
+                        job["apply_link"]
+                    )
+
+                with remove_col:
+
+                    if st.button(
+                        "Remove Saved",
+                        key=(
+                            f"remove_saved_{index}_"
+                            f"{job['apply_link']}"
+                        )
+                    ):
+
+                        cursor = manager.connection.cursor()
+
+                        cursor.execute(
+                            """
+                            DELETE FROM saved_jobs
+                            WHERE user_id = ?
+                            AND apply_link = ?
+                            """,
+                            (
+                                user_id,
+                                job["apply_link"]
+                            )
+                        )
+
+                        manager.connection.commit()
+
+                        st.rerun()
+
 
 # --------------------------------------------------
 # Applied Jobs
