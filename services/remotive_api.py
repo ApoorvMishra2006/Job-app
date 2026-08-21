@@ -1,7 +1,58 @@
+import re
 import requests
 
 from models.job import Job
 from utils.logger import logger
+
+
+def clean_description(description):
+
+    if not description:
+
+        return ""
+
+    # Remove script blocks
+    description = re.sub(
+        r"<script.*?>.*?</script>",
+        " ",
+        description,
+        flags=re.IGNORECASE | re.DOTALL
+    )
+
+    # Remove style blocks
+    description = re.sub(
+        r"<style.*?>.*?</style>",
+        " ",
+        description,
+        flags=re.IGNORECASE | re.DOTALL
+    )
+
+    # Remove HTML tags
+    description = re.sub(
+        r"<[^>]+>",
+        " ",
+        description
+    )
+
+    # Decode common HTML entities
+    description = (
+        description
+        .replace("&nbsp;", " ")
+        .replace("&amp;", "&")
+        .replace("&lt;", "<")
+        .replace("&gt;", ">")
+        .replace("&quot;", '"')
+        .replace("&#39;", "'")
+    )
+
+    # Remove excessive whitespace
+    description = re.sub(
+        r"\s+",
+        " ",
+        description
+    )
+
+    return description.strip()
 
 
 def get_remotive_jobs(search_term):
@@ -31,36 +82,58 @@ def get_remotive_jobs(search_term):
 
         jobs = []
 
-        for job in data.get("jobs", []):
+        for job in data.get(
+            "jobs",
+            []
+        ):
 
             job_obj = Job(
+
                 title=job.get(
                     "title",
                     "Unknown"
                 ),
+
                 company=job.get(
                     "company_name",
                     "Unknown"
                 ),
+
                 location=job.get(
                     "candidate_required_location",
                     "Remote"
                 ),
-                description=job.get(
-                    "description",
-                    ""
+
+                description=clean_description(
+                    job.get(
+                        "description",
+                        ""
+                    )
                 ),
+
                 apply_link=job.get(
                     "url",
                     ""
                 ),
-                source="Remotive"
+
+                source="Remotive",
+
+                salary_min=None,
+
+                salary_max=None,
+
+                posted_date=job.get(
+                    "publication_date"
+                )
             )
 
-            jobs.append(job_obj)
+            jobs.append(
+                job_obj
+            )
 
         logger.info(
-            f"Remotive returned {len(jobs)} jobs"
+            f"Remotive returned "
+            f"{len(jobs)} jobs"
         )
 
         return jobs
@@ -95,7 +168,8 @@ def get_remotive_jobs(search_term):
 
         logger.error(
             f"Remotive HTTP error "
-            f"status_code={status_code}: {error}"
+            f"status_code={status_code}: "
+            f"{error}"
         )
 
         if status_code == 401:
@@ -149,7 +223,8 @@ def get_remotive_jobs(search_term):
     except requests.exceptions.RequestException as error:
 
         logger.error(
-            f"Remotive request failed: {error}"
+            f"Remotive request failed: "
+            f"{error}"
         )
 
         print(

@@ -87,7 +87,6 @@ if not st.session_state.logged_in:
                 if user:
 
                     st.session_state.logged_in = True
-
                     st.session_state.user = user
 
                     st.success(
@@ -209,13 +208,9 @@ st.sidebar.write(
 if st.sidebar.button("Logout"):
 
     st.session_state.logged_in = False
-
     st.session_state.user = None
-
     st.session_state.jobs = []
-
     st.session_state.search_performed = False
-
     st.session_state.page = 1
 
     st.rerun()
@@ -364,12 +359,10 @@ if page == "Search Jobs":
                 )
 
                 st.session_state.jobs = jobs
-
                 st.session_state.page = 1
-
                 st.session_state.search_performed = True
-
                 st.session_state.current_source = source
+
 
     # --------------------------------------------------
     # Display Search Results
@@ -412,6 +405,10 @@ if page == "Search Jobs":
             st.success(
                 f"Found {total_jobs} unique jobs."
             )
+
+            # --------------------------------------------------
+            # Top Pagination
+            # --------------------------------------------------
 
             previous_col, page_col, next_col = (
                 st.columns([1, 2, 1])
@@ -464,6 +461,10 @@ if page == "Search Jobs":
                 f"of {total_jobs}"
             )
 
+            # --------------------------------------------------
+            # Job Cards
+            # --------------------------------------------------
+
             for index, job in enumerate(
                 page_jobs,
                 start=start_index + 1
@@ -489,16 +490,98 @@ if page == "Search Jobs":
                         f"**Source:** {job.source}"
                     )
 
-                    description = job.description
+                    # --------------------------------------------------
+                    # Enhanced Job Details
+                    # --------------------------------------------------
 
-                    if len(description) > 500:
+                    salary_min_value = getattr(
+                        job,
+                        "salary_min",
+                        None
+                    )
 
-                        description = (
-                            description[:500]
-                            + "..."
+                    salary_max_value = getattr(
+                        job,
+                        "salary_max",
+                        None
+                    )
+
+                    posted_date = getattr(
+                        job,
+                        "posted_date",
+                        None
+                    )
+
+                    if (
+                        salary_min_value is not None
+                        or salary_max_value is not None
+                    ):
+
+                        if (
+                            salary_min_value is not None
+                            and salary_max_value is not None
+                        ):
+
+                            st.write(
+                                f"💰 **Salary:** "
+                                f"{salary_min_value:,} - "
+                                f"{salary_max_value:,}"
+                            )
+
+                        elif salary_min_value is not None:
+
+                            st.write(
+                                f"💰 **Minimum Salary:** "
+                                f"{salary_min_value:,}"
+                            )
+
+                        else:
+
+                            st.write(
+                                f"💰 **Maximum Salary:** "
+                                f"{salary_max_value:,}"
+                            )
+
+                    elif job.source == "Remotive":
+
+                        st.write(
+                            "💰 **Salary:** Not specified"
                         )
 
-                    st.write(description)
+                    if posted_date:
+
+                        st.write(
+                            f"📅 **Posted:** {posted_date}"
+                        )
+
+                    # --------------------------------------------------
+                    # Description
+                    # --------------------------------------------------
+
+                    description = (
+                        job.description
+                        or ""
+                    )
+
+                    if description:
+
+                        with st.expander(
+                            "📄 View Job Description"
+                        ):
+
+                            st.write(
+                                description
+                            )
+
+                    else:
+
+                        st.write(
+                            "No job description available."
+                        )
+
+                    # --------------------------------------------------
+                    # Application / Save Status
+                    # --------------------------------------------------
 
                     already_applied = any(
                         applied_job["apply_link"]
@@ -507,9 +590,11 @@ if page == "Search Jobs":
                         in manager.applied_jobs
                     )
 
-                    already_saved = manager.is_job_saved(
-                        job,
-                        user_id
+                    already_saved = (
+                        manager.is_job_saved(
+                            job,
+                            user_id
+                        )
                     )
 
                     action_col, save_col, status_col = (
@@ -598,6 +683,10 @@ if page == "Search Jobs":
                                         "You have already "
                                         "applied to this job."
                                     )
+
+            # --------------------------------------------------
+            # Bottom Pagination
+            # --------------------------------------------------
 
             previous_col, page_col, next_col = (
                 st.columns([1, 2, 1])
@@ -698,16 +787,20 @@ elif page == "Saved Jobs":
                     f"**Saved:** {job['saved_at']}"
                 )
 
-                description = job["description"]
+                description = (
+                    job["description"]
+                    or ""
+                )
 
-                if len(description) > 300:
+                if description:
 
-                    description = (
-                        description[:300]
-                        + "..."
-                    )
+                    with st.expander(
+                        "📄 View Job Description"
+                    ):
 
-                st.write(description)
+                        st.write(
+                            description
+                        )
 
                 action_col, remove_col = (
                     st.columns([1, 1])
@@ -730,7 +823,9 @@ elif page == "Saved Jobs":
                         )
                     ):
 
-                        cursor = manager.connection.cursor()
+                        cursor = (
+                            manager.connection.cursor()
+                        )
 
                         cursor.execute(
                             """
@@ -803,16 +898,20 @@ else:
                     f"**Applied:** {job['applied_at']}"
                 )
 
-                description = job["description"]
+                description = (
+                    job["description"]
+                    or ""
+                )
 
-                if len(description) > 300:
+                if description:
 
-                    description = (
-                        description[:300]
-                        + "..."
-                    )
+                    with st.expander(
+                        "📄 View Job Description"
+                    ):
 
-                st.write(description)
+                        st.write(
+                            description
+                        )
 
                 st.link_button(
                     "Open Job",

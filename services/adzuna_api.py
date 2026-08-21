@@ -5,9 +5,17 @@ from models.job import Job
 from utils.logger import logger
 
 
-def get_job_info(search_term, country, salary_min, page):
+def get_job_info(
+    search_term,
+    country,
+    salary_min,
+    page
+):
 
-    base_url = f"https://api.adzuna.com/v1/api/jobs/{country}/search/{page}"
+    base_url = (
+        f"https://api.adzuna.com/v1/api/jobs/"
+        f"{country}/search/{page}"
+    )
 
     params = {
         "app_id": APP_ID,
@@ -17,6 +25,7 @@ def get_job_info(search_term, country, salary_min, page):
     }
 
     if salary_min:
+
         params["salary_min"] = salary_min
 
     logger.info(
@@ -40,10 +49,18 @@ def get_job_info(search_term, country, salary_min, page):
 
         jobs = []
 
-        for job in data.get("results", []):
+        for job in data.get(
+            "results",
+            []
+        ):
 
             job_obj = Job(
-                title=job.get("title", "Unknown"),
+
+                title=job.get(
+                    "title",
+                    "Unknown"
+                ),
+
                 company=job.get(
                     "company",
                     {}
@@ -51,6 +68,7 @@ def get_job_info(search_term, country, salary_min, page):
                     "display_name",
                     "Unknown"
                 ),
+
                 location=job.get(
                     "location",
                     {}
@@ -58,22 +76,41 @@ def get_job_info(search_term, country, salary_min, page):
                     "display_name",
                     "Unknown"
                 ),
+
                 description=job.get(
                     "description",
                     ""
                 ),
+
                 apply_link=job.get(
                     "redirect_url",
                     ""
                 ),
-                source="Adzuna"
+
+                source="Adzuna",
+
+                salary_min=job.get(
+                    "salary_min"
+                ),
+
+                salary_max=job.get(
+                    "salary_max"
+                ),
+
+                posted_date=job.get(
+                    "created"
+                )
             )
 
-            jobs.append(job_obj)
+            jobs.append(
+                job_obj
+            )
 
         logger.info(
-            f"Adzuna returned {len(jobs)} jobs "
-            f"for country='{country}', page={page}"
+            f"Adzuna returned "
+            f"{len(jobs)} jobs "
+            f"for country='{country}', "
+            f"page={page}"
         )
 
         return jobs
@@ -86,7 +123,8 @@ def get_job_info(search_term, country, salary_min, page):
         )
 
         print(
-            f"Adzuna request timed out ({country})."
+            f"Adzuna request timed out "
+            f"({country})."
         )
 
         return []
@@ -99,7 +137,8 @@ def get_job_info(search_term, country, salary_min, page):
         )
 
         print(
-            f"Could not connect to Adzuna ({country})."
+            f"Could not connect to Adzuna "
+            f"({country})."
         )
 
         return []
@@ -111,40 +150,46 @@ def get_job_info(search_term, country, salary_min, page):
         logger.error(
             f"Adzuna HTTP error "
             f"for country='{country}', "
-            f"status_code={status_code}: {error}"
+            f"status_code={status_code}: "
+            f"{error}"
         )
 
         if status_code == 401:
 
             print(
-                f"Adzuna authentication failed ({country}). "
+                f"Adzuna authentication failed "
+                f"({country}). "
                 "Check your API credentials."
             )
 
         elif status_code == 403:
 
             print(
-                f"Adzuna access forbidden ({country})."
+                f"Adzuna access forbidden "
+                f"({country})."
             )
 
         elif status_code == 429:
 
             print(
-                f"Adzuna rate limit reached ({country}). "
+                f"Adzuna rate limit reached "
+                f"({country}). "
                 "Please try again later."
             )
 
         elif status_code >= 500:
 
             print(
-                f"Adzuna server error ({country}). "
+                f"Adzuna server error "
+                f"({country}). "
                 "Please try again later."
             )
 
         else:
 
             print(
-                f"Adzuna request failed ({country}). "
+                f"Adzuna request failed "
+                f"({country}). "
                 f"HTTP status: {status_code}"
             )
 
@@ -158,7 +203,8 @@ def get_job_info(search_term, country, salary_min, page):
         )
 
         print(
-            f"Adzuna returned an invalid response ({country})."
+            f"Adzuna returned an invalid "
+            f"response ({country})."
         )
 
         return []
@@ -167,11 +213,13 @@ def get_job_info(search_term, country, salary_min, page):
 
         logger.error(
             f"Adzuna request failed "
-            f"for country='{country}': {error}"
+            f"for country='{country}': "
+            f"{error}"
         )
 
         print(
-            f"Adzuna request failed ({country}): {error}"
+            f"Adzuna request failed "
+            f"({country}): {error}"
         )
 
         return []
@@ -192,10 +240,12 @@ def get_jobs_from_countries(
             search_term,
             country,
             salary_min,
-            page,
+            page
         )
 
-        all_jobs.extend(jobs)
+        all_jobs.extend(
+            jobs
+        )
 
     logger.info(
         f"Adzuna total jobs returned: "
