@@ -1,12 +1,10 @@
-from utils.logger import logger
+from datetime import datetime, timezone
 
 
 def remove_duplicate_jobs(jobs):
 
-    unique_jobs = []
     seen = set()
-
-    duplicate_count = 0
+    unique_jobs = []
 
     for job in jobs:
 
@@ -21,14 +19,100 @@ def remove_duplicate_jobs(jobs):
             seen.add(key)
             unique_jobs.append(job)
 
-        else:
+    return unique_jobs
 
-            duplicate_count += 1
 
-    if duplicate_count > 0:
+def filter_jobs(
+    jobs,
+    job_types=None,
+    work_modes=None,
+    posted_within=None
+):
 
-        logger.info(
-            f"Removed {duplicate_count} duplicate job(s)."
+    filtered_jobs = []
+
+    now = datetime.now(
+        timezone.utc
+    )
+
+    for job in jobs:
+
+        # -----------------------------
+        # Job Type Filter
+        # -----------------------------
+
+        if job_types:
+
+            job_type = (
+                getattr(
+                    job,
+                    "job_type",
+                    None
+                )
+                or "Unknown"
+            ).lower()
+
+            if not any(
+                selected.lower() in job_type
+                for selected in job_types
+            ):
+
+                continue
+
+        # -----------------------------
+        # Work Mode Filter
+        # -----------------------------
+
+        if work_modes:
+
+            work_mode = (
+                getattr(
+                    job,
+                    "work_mode",
+                    None
+                )
+                or "Unknown"
+            ).lower()
+
+            if work_mode not in [
+                mode.lower()
+                for mode in work_modes
+            ]:
+
+                continue
+
+        # -----------------------------
+        # Posted Date Filter
+        # -----------------------------
+
+        if posted_within:
+
+            posted_date = getattr(
+                job,
+                "posted_date",
+                None
+            )
+
+            if not posted_date:
+
+                continue
+
+            if posted_date.tzinfo is None:
+
+                posted_date = posted_date.replace(
+                    tzinfo=timezone.utc
+                )
+
+            days_old = (
+                now - posted_date
+            ).days
+
+            if days_old > posted_within:
+
+                continue
+
+        filtered_jobs.append(
+            job
         )
 
-    return unique_jobs
+    return filtered_jobs

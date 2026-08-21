@@ -4,10 +4,24 @@ import streamlit as st
 
 from config import COUNTRIES, RESULTS_PER_PAGE
 from managers.job_manager import JobManager
-from services.adzuna_api import get_jobs_from_countries
-from services.remotive_api import get_remotive_jobs
-from services.job_utils import remove_duplicate_jobs
-from utils.auth import register_user, login_user
+
+from services.adzuna_api import (
+    get_jobs_from_countries
+)
+
+from services.remotive_api import (
+    get_remotive_jobs
+)
+
+from services.job_utils import (
+    remove_duplicate_jobs,
+    filter_jobs
+)
+
+from utils.auth import (
+    register_user,
+    login_user
+)
 
 
 st.set_page_config(
@@ -19,6 +33,10 @@ st.set_page_config(
 
 manager = JobManager()
 
+
+# ==================================================
+# LOGIN / SIGN UP
+# ==================================================
 
 if "logged_in" not in st.session_state:
 
@@ -44,6 +62,11 @@ if not st.session_state.logged_in:
             "Sign Up"
         ]
     )
+
+
+    # --------------------------------------------------
+    # Login
+    # --------------------------------------------------
 
     with login_tab:
 
@@ -101,6 +124,11 @@ if not st.session_state.logged_in:
                         "Invalid username or password."
                     )
 
+
+    # --------------------------------------------------
+    # Sign Up
+    # --------------------------------------------------
+
     with signup_tab:
 
         st.header("Create Account")
@@ -151,16 +179,22 @@ if not st.session_state.logged_in:
                     message
                 )
 
+
     st.stop()
 
 
-# --------------------------------------------------
-# Session State
-# --------------------------------------------------
+# ==================================================
+# SESSION STATE
+# ==================================================
 
 if "jobs" not in st.session_state:
 
     st.session_state.jobs = []
+
+
+if "filtered_jobs" not in st.session_state:
+
+    st.session_state.filtered_jobs = []
 
 
 if "page" not in st.session_state:
@@ -180,13 +214,19 @@ if "current_source" not in st.session_state:
 
 user_id = st.session_state.user["id"]
 
-manager.load_applied_jobs(user_id)
-manager.load_saved_jobs(user_id)
+
+manager.load_applied_jobs(
+    user_id
+)
+
+manager.load_saved_jobs(
+    user_id
+)
 
 
-# --------------------------------------------------
-# Main UI
-# --------------------------------------------------
+# ==================================================
+# MAIN UI
+# ==================================================
 
 st.title("💼 Job Aggregator")
 
@@ -195,9 +235,9 @@ st.write(
 )
 
 
-# --------------------------------------------------
-# Sidebar
-# --------------------------------------------------
+# ==================================================
+# SIDEBAR
+# ==================================================
 
 st.sidebar.write(
     f"Logged in as: "
@@ -209,7 +249,10 @@ if st.sidebar.button("Logout"):
 
     st.session_state.logged_in = False
     st.session_state.user = None
+
     st.session_state.jobs = []
+    st.session_state.filtered_jobs = []
+
     st.session_state.search_performed = False
     st.session_state.page = 1
 
@@ -226,18 +269,20 @@ page = st.sidebar.radio(
 )
 
 
-# --------------------------------------------------
-# Search Jobs
-# --------------------------------------------------
+# ==================================================
+# SEARCH JOBS
+# ==================================================
 
 if page == "Search Jobs":
 
     st.header("🔎 Search Jobs")
 
+
     job_name = st.text_input(
         "Job keyword",
         placeholder="e.g. Python Developer"
     )
+
 
     source = st.selectbox(
         "Choose job source",
@@ -248,19 +293,28 @@ if page == "Search Jobs":
         ]
     )
 
+
     countries = []
 
-    if source in ["Adzuna", "Both"]:
+
+    if source in [
+        "Adzuna",
+        "Both"
+    ]:
 
         country_options = {
             name: code
             for name, code in COUNTRIES.values()
         }
 
+
         selected_countries = st.multiselect(
             "Choose countries",
-            options=list(country_options.keys())
+            options=list(
+                country_options.keys()
+            )
         )
+
 
         for country in selected_countries:
 
@@ -268,19 +322,30 @@ if page == "Search Jobs":
                 country_options[country]
             )
 
+
     salary_min = ""
 
-    if source in ["Adzuna", "Both"]:
+
+    if source in [
+        "Adzuna",
+        "Both"
+    ]:
 
         salary_min = st.text_input(
             "Minimum salary (optional)",
             placeholder="e.g. 500000"
         )
 
+
+    # ==================================================
+    # SEARCH BUTTON
+    # ==================================================
+
     search_button = st.button(
         "🔎 Search Jobs",
         type="primary"
     )
+
 
     if search_button:
 
@@ -290,8 +355,12 @@ if page == "Search Jobs":
                 "Please enter a job keyword."
             )
 
+
         elif (
-            source in ["Adzuna", "Both"]
+            source in [
+                "Adzuna",
+                "Both"
+            ]
             and not countries
         ):
 
@@ -299,8 +368,12 @@ if page == "Search Jobs":
                 "Please select at least one country."
             )
 
+
         elif (
-            source in ["Adzuna", "Both"]
+            source in [
+                "Adzuna",
+                "Both"
+            ]
             and salary_min
             and not salary_min.isdigit()
         ):
@@ -309,6 +382,7 @@ if page == "Search Jobs":
                 "Please enter a valid minimum salary."
             )
 
+
         else:
 
             with st.spinner(
@@ -316,6 +390,7 @@ if page == "Search Jobs":
             ):
 
                 jobs = []
+
 
                 if source == "Adzuna":
 
@@ -326,11 +401,13 @@ if page == "Search Jobs":
                         1
                     )
 
+
                 elif source == "Remotive":
 
                     jobs = get_remotive_jobs(
                         job_name.strip()
                     )
+
 
                 elif source == "Both":
 
@@ -343,34 +420,44 @@ if page == "Search Jobs":
                         )
                     )
 
+
                     remotive_jobs = (
                         get_remotive_jobs(
                             job_name.strip()
                         )
                     )
 
+
                     jobs = (
                         adzuna_jobs
                         + remotive_jobs
                     )
 
+
                 jobs = remove_duplicate_jobs(
                     jobs
                 )
 
+
                 st.session_state.jobs = jobs
+
+                st.session_state.filtered_jobs = jobs
+
                 st.session_state.page = 1
+
                 st.session_state.search_performed = True
+
                 st.session_state.current_source = source
 
 
-    # --------------------------------------------------
-    # Display Search Results
-    # --------------------------------------------------
+    # ==================================================
+    # DISPLAY SEARCH RESULTS
+    # ==================================================
 
     if st.session_state.search_performed:
 
         jobs = st.session_state.jobs
+
 
         if not jobs:
 
@@ -378,372 +465,561 @@ if page == "Search Jobs":
                 "No jobs found for your search."
             )
 
+
         else:
 
-            total_jobs = len(jobs)
+            # ==================================================
+            # FILTERS
+            # ==================================================
 
-            total_pages = math.ceil(
-                total_jobs / RESULTS_PER_PAGE
+            st.subheader("🎯 Filters")
+
+
+            filter_col1, filter_col2, filter_col3 = (
+                st.columns(3)
             )
 
-            if st.session_state.page > total_pages:
 
-                st.session_state.page = total_pages
+            with filter_col1:
 
-            start_index = (
-                st.session_state.page - 1
-            ) * RESULTS_PER_PAGE
-
-            end_index = (
-                start_index + RESULTS_PER_PAGE
-            )
-
-            page_jobs = jobs[
-                start_index:end_index
-            ]
-
-            st.success(
-                f"Found {total_jobs} unique jobs."
-            )
-
-            # --------------------------------------------------
-            # Top Pagination
-            # --------------------------------------------------
-
-            previous_col, page_col, next_col = (
-                st.columns([1, 2, 1])
-            )
-
-            with previous_col:
-
-                if st.button(
-                    "← Previous",
-                    disabled=(
-                        st.session_state.page == 1
-                    ),
-                    key="previous_top"
-                ):
-
-                    st.session_state.page -= 1
-
-                    st.rerun()
-
-            with page_col:
-
-                st.markdown(
-                    f"<div style='text-align: center;'>"
-                    f"<b>Page "
-                    f"{st.session_state.page} "
-                    f"of {total_pages}</b>"
-                    f"</div>",
-                    unsafe_allow_html=True
+                selected_job_types = st.multiselect(
+                    "Job Type",
+                    [
+                        "Full-time",
+                        "Part-time",
+                        "Contract",
+                        "Internship",
+                        "Temporary"
+                    ]
                 )
 
-            with next_col:
 
-                if st.button(
-                    "Next →",
-                    disabled=(
-                        st.session_state.page
-                        == total_pages
-                    ),
-                    key="next_top"
-                ):
+            with filter_col2:
 
-                    st.session_state.page += 1
+                selected_work_modes = st.multiselect(
+                    "Work Mode",
+                    [
+                        "Remote",
+                        "Hybrid",
+                        "On-site"
+                    ]
+                )
 
-                    st.rerun()
 
-            st.write(
-                f"Showing jobs "
-                f"{start_index + 1}–"
-                f"{min(end_index, total_jobs)} "
-                f"of {total_jobs}"
+            with filter_col3:
+
+                posted_options = {
+                    "Any time": None,
+                    "Last 1 day": 1,
+                    "Last 3 days": 3,
+                    "Last 7 days": 7,
+                    "Last 14 days": 14,
+                    "Last 30 days": 30
+                }
+
+
+                selected_posted = st.selectbox(
+                    "Posted Within",
+                    list(
+                        posted_options.keys()
+                    )
+                )
+
+
+            apply_filters_button = st.button(
+                "Apply Filters"
             )
 
-            # --------------------------------------------------
-            # Job Cards
-            # --------------------------------------------------
 
-            for index, job in enumerate(
-                page_jobs,
-                start=start_index + 1
-            ):
+            clear_filters_button = st.button(
+                "Clear Filters"
+            )
 
-                with st.container(
-                    border=True
+
+            if apply_filters_button:
+
+                st.session_state.filtered_jobs = (
+                    filter_jobs(
+                        jobs,
+                        job_types=selected_job_types,
+                        work_modes=selected_work_modes,
+                        posted_within=posted_options[
+                            selected_posted
+                        ]
+                    )
+                )
+
+                st.session_state.page = 1
+
+
+            if clear_filters_button:
+
+                st.session_state.filtered_jobs = jobs
+
+                st.session_state.page = 1
+
+
+            jobs = st.session_state.filtered_jobs
+
+
+            if not jobs:
+
+                st.warning(
+                    "No jobs match the selected filters."
+                )
+
+
+            else:
+
+                total_jobs = len(jobs)
+
+
+                total_pages = math.ceil(
+                    total_jobs
+                    / RESULTS_PER_PAGE
+                )
+
+
+                if (
+                    st.session_state.page
+                    > total_pages
                 ):
 
-                    st.subheader(
-                        f"{index}. {job.title}"
-                    )
+                    st.session_state.page = total_pages
 
-                    st.write(
-                        f"**Company:** {job.company}"
-                    )
 
-                    st.write(
-                        f"**Location:** {job.location}"
-                    )
+                start_index = (
+                    st.session_state.page - 1
+                ) * RESULTS_PER_PAGE
 
-                    st.write(
-                        f"**Source:** {job.source}"
-                    )
 
-                    # --------------------------------------------------
-                    # Enhanced Job Details
-                    # --------------------------------------------------
+                end_index = (
+                    start_index
+                    + RESULTS_PER_PAGE
+                )
 
-                    salary_min_value = getattr(
-                        job,
-                        "salary_min",
-                        None
-                    )
 
-                    salary_max_value = getattr(
-                        job,
-                        "salary_max",
-                        None
-                    )
+                page_jobs = jobs[
+                    start_index:end_index
+                ]
 
-                    posted_date = getattr(
-                        job,
-                        "posted_date",
-                        None
-                    )
 
-                    if (
-                        salary_min_value is not None
-                        or salary_max_value is not None
+                st.success(
+                    f"Found {total_jobs} jobs "
+                    f"matching your filters."
+                )
+
+
+                # ==================================================
+                # TOP PAGINATION
+                # ==================================================
+
+                previous_col, page_col, next_col = (
+                    st.columns([1, 2, 1])
+                )
+
+
+                with previous_col:
+
+                    if st.button(
+                        "← Previous",
+                        disabled=(
+                            st.session_state.page == 1
+                        ),
+                        key="previous_top"
                     ):
+
+                        st.session_state.page -= 1
+
+                        st.rerun()
+
+
+                with page_col:
+
+                    st.markdown(
+                        f"<div style='text-align: center;'>"
+                        f"<b>Page "
+                        f"{st.session_state.page} "
+                        f"of {total_pages}</b>"
+                        f"</div>",
+                        unsafe_allow_html=True
+                    )
+
+
+                with next_col:
+
+                    if st.button(
+                        "Next →",
+                        disabled=(
+                            st.session_state.page
+                            == total_pages
+                        ),
+                        key="next_top"
+                    ):
+
+                        st.session_state.page += 1
+
+                        st.rerun()
+
+
+                st.write(
+                    f"Showing jobs "
+                    f"{start_index + 1}–"
+                    f"{min(end_index, total_jobs)} "
+                    f"of {total_jobs}"
+                )
+
+
+                # ==================================================
+                # JOB CARDS
+                # ==================================================
+
+                for index, job in enumerate(
+                    page_jobs,
+                    start=start_index + 1
+                ):
+
+                    with st.container(
+                        border=True
+                    ):
+
+                        st.subheader(
+                            f"{index}. {job.title}"
+                        )
+
+
+                        st.write(
+                            f"**Company:** "
+                            f"{job.company}"
+                        )
+
+
+                        st.write(
+                            f"**Location:** "
+                            f"{job.location}"
+                        )
+
+
+                        st.write(
+                            f"**Source:** "
+                            f"{job.source}"
+                        )
+
+
+                        # ------------------------------------------
+                        # Enhanced Job Details
+                        # ------------------------------------------
+
+                        salary_min_value = getattr(
+                            job,
+                            "salary_min",
+                            None
+                        )
+
+
+                        salary_max_value = getattr(
+                            job,
+                            "salary_max",
+                            None
+                        )
+
+
+                        posted_date = getattr(
+                            job,
+                            "posted_date",
+                            None
+                        )
+
 
                         if (
                             salary_min_value is not None
-                            and salary_max_value is not None
+                            or salary_max_value is not None
                         ):
 
-                            st.write(
-                                f"💰 **Salary:** "
-                                f"{salary_min_value:,} - "
-                                f"{salary_max_value:,}"
-                            )
+                            if (
+                                salary_min_value is not None
+                                and salary_max_value is not None
+                            ):
 
-                        elif salary_min_value is not None:
+                                st.write(
+                                    f"💰 **Salary:** "
+                                    f"{salary_min_value:,} - "
+                                    f"{salary_max_value:,}"
+                                )
 
-                            st.write(
-                                f"💰 **Minimum Salary:** "
-                                f"{salary_min_value:,}"
-                            )
 
-                        else:
+                            elif salary_min_value is not None:
 
-                            st.write(
-                                f"💰 **Maximum Salary:** "
-                                f"{salary_max_value:,}"
-                            )
+                                st.write(
+                                    f"💰 **Minimum Salary:** "
+                                    f"{salary_min_value:,}"
+                                )
 
-                    elif job.source == "Remotive":
 
-                        st.write(
-                            "💰 **Salary:** Not specified"
-                        )
+                            else:
 
-                    if posted_date:
+                                st.write(
+                                    f"💰 **Maximum Salary:** "
+                                    f"{salary_max_value:,}"
+                                )
 
-                        st.write(
-                            f"📅 **Posted:** {posted_date}"
-                        )
 
-                    # --------------------------------------------------
-                    # Description
-                    # --------------------------------------------------
-
-                    description = (
-                        job.description
-                        or ""
-                    )
-
-                    if description:
-
-                        with st.expander(
-                            "📄 View Job Description"
-                        ):
+                        elif job.source == "Remotive":
 
                             st.write(
-                                description
+                                "💰 **Salary:** "
+                                "Not specified"
                             )
 
-                    else:
 
-                        st.write(
-                            "No job description available."
-                        )
+                        if posted_date:
 
-                    # --------------------------------------------------
-                    # Application / Save Status
-                    # --------------------------------------------------
+                            st.write(
+                                f"📅 **Posted:** "
+                                f"{posted_date}"
+                            )
 
-                    already_applied = any(
-                        applied_job["apply_link"]
-                        == job.apply_link
-                        for applied_job
-                        in manager.applied_jobs
-                    )
 
-                    already_saved = (
-                        manager.is_job_saved(
+                        job_type = getattr(
                             job,
-                            user_id
-                        )
-                    )
-
-                    action_col, save_col, status_col = (
-                        st.columns([1, 1, 2])
-                    )
-
-                    with action_col:
-
-                        st.link_button(
-                            "Open Job",
-                            job.apply_link
+                            "job_type",
+                            None
                         )
 
-                    with save_col:
 
-                        if already_saved:
+                        work_mode = getattr(
+                            job,
+                            "work_mode",
+                            None
+                        )
 
-                            if st.button(
-                                "⭐ Saved",
-                                key=(
-                                    f"unsave_{index}_"
-                                    f"{job.apply_link}"
-                                )
-                            ):
 
-                                manager.unsave_job(
-                                    job,
-                                    user_id
-                                )
+                        if job_type:
 
-                                st.rerun()
-
-                        else:
-
-                            if st.button(
-                                "☆ Save",
-                                key=(
-                                    f"save_{index}_"
-                                    f"{job.apply_link}"
-                                )
-                            ):
-
-                                if manager.save_job(
-                                    job,
-                                    user_id
-                                ):
-
-                                    st.success(
-                                        "Job saved!"
-                                    )
-
-                                    st.rerun()
-
-                    with status_col:
-
-                        if already_applied:
-
-                            st.success(
-                                "Already applied"
+                            st.write(
+                                f"💼 **Job Type:** "
+                                f"{job_type}"
                             )
 
-                        else:
 
-                            if st.button(
-                                "Mark as Applied",
-                                key=(
-                                    f"apply_{index}_"
-                                    f"{job.apply_link}"
-                                )
+                        if work_mode:
+
+                            st.write(
+                                f"🏠 **Work Mode:** "
+                                f"{work_mode}"
+                            )
+
+
+                        # ------------------------------------------
+                        # Description
+                        # ------------------------------------------
+
+                        description = (
+                            job.description
+                            or ""
+                        )
+
+
+                        if description:
+
+                            with st.expander(
+                                "📄 View Job Description"
                             ):
 
-                                if manager.apply_job(
-                                    job,
-                                    user_id
+                                st.write(
+                                    description
+                                )
+
+                        else:
+
+                            st.write(
+                                "No job description available."
+                            )
+
+
+                        # ------------------------------------------
+                        # Save / Apply
+                        # ------------------------------------------
+
+                        already_applied = any(
+                            applied_job[
+                                "apply_link"
+                            ]
+                            == job.apply_link
+                            for applied_job
+                            in manager.applied_jobs
+                        )
+
+
+                        already_saved = (
+                            manager.is_job_saved(
+                                job,
+                                user_id
+                            )
+                        )
+
+
+                        action_col, save_col, status_col = (
+                            st.columns(
+                                [1, 1, 2]
+                            )
+                        )
+
+
+                        with action_col:
+
+                            st.link_button(
+                                "Open Job",
+                                job.apply_link
+                            )
+
+
+                        with save_col:
+
+                            if already_saved:
+
+                                if st.button(
+                                    "⭐ Saved",
+                                    key=(
+                                        f"unsave_{index}_"
+                                        f"{job.apply_link}"
+                                    )
                                 ):
 
-                                    st.success(
-                                        "Job marked as applied!"
+                                    manager.unsave_job(
+                                        job,
+                                        user_id
                                     )
 
                                     st.rerun()
 
-                                else:
 
-                                    st.info(
-                                        "You have already "
-                                        "applied to this job."
+                            else:
+
+                                if st.button(
+                                    "☆ Save",
+                                    key=(
+                                        f"save_{index}_"
+                                        f"{job.apply_link}"
                                     )
+                                ):
 
-            # --------------------------------------------------
-            # Bottom Pagination
-            # --------------------------------------------------
+                                    if manager.save_job(
+                                        job,
+                                        user_id
+                                    ):
 
-            previous_col, page_col, next_col = (
-                st.columns([1, 2, 1])
-            )
+                                        st.success(
+                                            "Job saved!"
+                                        )
 
-            with previous_col:
+                                        st.rerun()
 
-                if st.button(
-                    "← Previous",
-                    disabled=(
-                        st.session_state.page == 1
-                    ),
-                    key="previous_bottom"
-                ):
 
-                    st.session_state.page -= 1
+                        with status_col:
 
-                    st.rerun()
+                            if already_applied:
 
-            with page_col:
+                                st.success(
+                                    "Already applied"
+                                )
 
-                st.markdown(
-                    f"<div style='text-align: center;'>"
-                    f"<b>Page "
-                    f"{st.session_state.page} "
-                    f"of {total_pages}</b>"
-                    f"</div>",
-                    unsafe_allow_html=True
+
+                            else:
+
+                                if st.button(
+                                    "Mark as Applied",
+                                    key=(
+                                        f"apply_{index}_"
+                                        f"{job.apply_link}"
+                                    )
+                                ):
+
+                                    if manager.apply_job(
+                                        job,
+                                        user_id
+                                    ):
+
+                                        st.success(
+                                            "Job marked as applied!"
+                                        )
+
+                                        st.rerun()
+
+
+                                    else:
+
+                                        st.info(
+                                            "You have already "
+                                            "applied to this job."
+                                        )
+
+
+                # ==================================================
+                # BOTTOM PAGINATION
+                # ==================================================
+
+                previous_col, page_col, next_col = (
+                    st.columns([1, 2, 1])
                 )
 
-            with next_col:
 
-                if st.button(
-                    "Next →",
-                    disabled=(
-                        st.session_state.page
-                        == total_pages
-                    ),
-                    key="next_bottom"
-                ):
+                with previous_col:
 
-                    st.session_state.page += 1
+                    if st.button(
+                        "← Previous",
+                        disabled=(
+                            st.session_state.page == 1
+                        ),
+                        key="previous_bottom"
+                    ):
 
-                    st.rerun()
+                        st.session_state.page -= 1
+
+                        st.rerun()
 
 
-# --------------------------------------------------
-# Saved Jobs
-# --------------------------------------------------
+                with page_col:
+
+                    st.markdown(
+                        f"<div style='text-align: center;'>"
+                        f"<b>Page "
+                        f"{st.session_state.page} "
+                        f"of {total_pages}</b>"
+                        f"</div>",
+                        unsafe_allow_html=True
+                    )
+
+
+                with next_col:
+
+                    if st.button(
+                        "Next →",
+                        disabled=(
+                            st.session_state.page
+                            == total_pages
+                        ),
+                        key="next_bottom"
+                    ):
+
+                        st.session_state.page += 1
+
+                        st.rerun()
+
+
+# ==================================================
+# SAVED JOBS
+# ==================================================
 
 elif page == "Saved Jobs":
 
     st.header("⭐ Saved Jobs")
 
+
     manager.load_saved_jobs(
         user_id
     )
+
 
     if not manager.saved_jobs:
 
@@ -751,12 +1027,14 @@ elif page == "Saved Jobs":
             "You haven't saved any jobs yet."
         )
 
+
     else:
 
         st.success(
             f"You have saved "
             f"{len(manager.saved_jobs)} job(s)."
         )
+
 
         for index, job in enumerate(
             manager.saved_jobs,
@@ -771,26 +1049,36 @@ elif page == "Saved Jobs":
                     f"{index}. {job['title']}"
                 )
 
-                st.write(
-                    f"**Company:** {job['company']}"
-                )
 
                 st.write(
-                    f"**Location:** {job['location']}"
+                    f"**Company:** "
+                    f"{job['company']}"
                 )
 
-                st.write(
-                    f"**Source:** {job['source']}"
-                )
 
                 st.write(
-                    f"**Saved:** {job['saved_at']}"
+                    f"**Location:** "
+                    f"{job['location']}"
                 )
+
+
+                st.write(
+                    f"**Source:** "
+                    f"{job['source']}"
+                )
+
+
+                st.write(
+                    f"**Saved:** "
+                    f"{job['saved_at']}"
+                )
+
 
                 description = (
                     job["description"]
                     or ""
                 )
+
 
                 if description:
 
@@ -802,9 +1090,11 @@ elif page == "Saved Jobs":
                             description
                         )
 
+
                 action_col, remove_col = (
                     st.columns([1, 1])
                 )
+
 
                 with action_col:
 
@@ -812,6 +1102,7 @@ elif page == "Saved Jobs":
                         "Open Job",
                         job["apply_link"]
                     )
+
 
                 with remove_col:
 
@@ -827,6 +1118,7 @@ elif page == "Saved Jobs":
                             manager.connection.cursor()
                         )
 
+
                         cursor.execute(
                             """
                             DELETE FROM saved_jobs
@@ -839,22 +1131,25 @@ elif page == "Saved Jobs":
                             )
                         )
 
+
                         manager.connection.commit()
 
                         st.rerun()
 
 
-# --------------------------------------------------
-# Applied Jobs
-# --------------------------------------------------
+# ==================================================
+# APPLIED JOBS
+# ==================================================
 
 else:
 
     st.header("📋 Applied Jobs")
 
+
     manager.load_applied_jobs(
         user_id
     )
+
 
     if not manager.applied_jobs:
 
@@ -862,12 +1157,14 @@ else:
             "You haven't applied to any jobs yet."
         )
 
+
     else:
 
         st.success(
             f"You have applied to "
             f"{len(manager.applied_jobs)} job(s)."
         )
+
 
         for index, job in enumerate(
             manager.applied_jobs,
@@ -882,26 +1179,36 @@ else:
                     f"{index}. {job['title']}"
                 )
 
-                st.write(
-                    f"**Company:** {job['company']}"
-                )
 
                 st.write(
-                    f"**Location:** {job['location']}"
+                    f"**Company:** "
+                    f"{job['company']}"
                 )
 
-                st.write(
-                    f"**Source:** {job['source']}"
-                )
 
                 st.write(
-                    f"**Applied:** {job['applied_at']}"
+                    f"**Location:** "
+                    f"{job['location']}"
                 )
+
+
+                st.write(
+                    f"**Source:** "
+                    f"{job['source']}"
+                )
+
+
+                st.write(
+                    f"**Applied:** "
+                    f"{job['applied_at']}"
+                )
+
 
                 description = (
                     job["description"]
                     or ""
                 )
+
 
                 if description:
 
@@ -912,6 +1219,7 @@ else:
                         st.write(
                             description
                         )
+
 
                 st.link_button(
                     "Open Job",

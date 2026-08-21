@@ -1,3 +1,5 @@
+from datetime import datetime
+
 import requests
 
 from config import APP_ID, APP_KEY, RESULTS_PER_PAGE
@@ -54,8 +56,72 @@ def get_job_info(
             []
         ):
 
-            job_obj = Job(
+            created = job.get(
+                "created"
+            )
 
+            posted_date = None
+
+            if created:
+
+                try:
+
+                    posted_date = datetime.fromisoformat(
+                        created.replace(
+                            "Z",
+                            "+00:00"
+                        )
+                    )
+
+                except ValueError:
+
+                    posted_date = None
+
+            contract_time = job.get(
+                "contract_time"
+            )
+
+            contract_type = job.get(
+                "contract_type"
+            )
+
+            if contract_time:
+
+                job_type = contract_time.replace(
+                    "_",
+                    " "
+                ).title()
+
+            elif contract_type:
+
+                job_type = contract_type.replace(
+                    "_",
+                    " "
+                ).title()
+
+            else:
+
+                job_type = "Unknown"
+
+            location = job.get(
+                "location",
+                {}
+            ).get(
+                "display_name",
+                "Unknown"
+            )
+
+            location_lower = location.lower()
+
+            if "remote" in location_lower:
+
+                work_mode = "Remote"
+
+            else:
+
+                work_mode = "On-site"
+
+            job_obj = Job(
                 title=job.get(
                     "title",
                     "Unknown"
@@ -69,13 +135,7 @@ def get_job_info(
                     "Unknown"
                 ),
 
-                location=job.get(
-                    "location",
-                    {}
-                ).get(
-                    "display_name",
-                    "Unknown"
-                ),
+                location=location,
 
                 description=job.get(
                     "description",
@@ -89,6 +149,10 @@ def get_job_info(
 
                 source="Adzuna",
 
+                job_type=job_type,
+
+                work_mode=work_mode,
+
                 salary_min=job.get(
                     "salary_min"
                 ),
@@ -97,9 +161,7 @@ def get_job_info(
                     "salary_max"
                 ),
 
-                posted_date=job.get(
-                    "created"
-                )
+                posted_date=posted_date
             )
 
             jobs.append(
@@ -150,8 +212,7 @@ def get_job_info(
         logger.error(
             f"Adzuna HTTP error "
             f"for country='{country}', "
-            f"status_code={status_code}: "
-            f"{error}"
+            f"status_code={status_code}: {error}"
         )
 
         if status_code == 401:
@@ -213,8 +274,7 @@ def get_job_info(
 
         logger.error(
             f"Adzuna request failed "
-            f"for country='{country}': "
-            f"{error}"
+            f"for country='{country}': {error}"
         )
 
         print(

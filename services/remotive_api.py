@@ -1,63 +1,16 @@
-import re
+from datetime import datetime
+
 import requests
 
 from models.job import Job
 from utils.logger import logger
 
 
-def clean_description(description):
-
-    if not description:
-
-        return ""
-
-    # Remove script blocks
-    description = re.sub(
-        r"<script.*?>.*?</script>",
-        " ",
-        description,
-        flags=re.IGNORECASE | re.DOTALL
-    )
-
-    # Remove style blocks
-    description = re.sub(
-        r"<style.*?>.*?</style>",
-        " ",
-        description,
-        flags=re.IGNORECASE | re.DOTALL
-    )
-
-    # Remove HTML tags
-    description = re.sub(
-        r"<[^>]+>",
-        " ",
-        description
-    )
-
-    # Decode common HTML entities
-    description = (
-        description
-        .replace("&nbsp;", " ")
-        .replace("&amp;", "&")
-        .replace("&lt;", "<")
-        .replace("&gt;", ">")
-        .replace("&quot;", '"')
-        .replace("&#39;", "'")
-    )
-
-    # Remove excessive whitespace
-    description = re.sub(
-        r"\s+",
-        " ",
-        description
-    )
-
-    return description.strip()
-
-
 def get_remotive_jobs(search_term):
 
-    url = "https://remotive.com/api/remote-jobs"
+    url = (
+        "https://remotive.com/api/remote-jobs"
+    )
 
     params = {
         "search": search_term
@@ -87,6 +40,43 @@ def get_remotive_jobs(search_term):
             []
         ):
 
+            posted_date = None
+
+            publication_date = job.get(
+                "publication_date"
+            )
+
+            if publication_date:
+
+                try:
+
+                    posted_date = datetime.fromisoformat(
+                        publication_date.replace(
+                            "Z",
+                            "+00:00"
+                        )
+                    )
+
+                except ValueError:
+
+                    posted_date = None
+
+            job_type = job.get(
+                "job_type",
+                "Unknown"
+            )
+
+            if job_type:
+
+                job_type = job_type.replace(
+                    "_",
+                    " "
+                ).title()
+
+            else:
+
+                job_type = "Unknown"
+
             job_obj = Job(
 
                 title=job.get(
@@ -104,11 +94,9 @@ def get_remotive_jobs(search_term):
                     "Remote"
                 ),
 
-                description=clean_description(
-                    job.get(
-                        "description",
-                        ""
-                    )
+                description=job.get(
+                    "description",
+                    ""
                 ),
 
                 apply_link=job.get(
@@ -118,13 +106,19 @@ def get_remotive_jobs(search_term):
 
                 source="Remotive",
 
-                salary_min=None,
+                job_type=job_type,
 
-                salary_max=None,
+                work_mode="Remote",
 
-                posted_date=job.get(
-                    "publication_date"
-                )
+                salary_min=job.get(
+                    "salary_min"
+                ),
+
+                salary_max=job.get(
+                    "salary_max"
+                ),
+
+                posted_date=posted_date
             )
 
             jobs.append(
@@ -164,7 +158,9 @@ def get_remotive_jobs(search_term):
 
     except requests.exceptions.HTTPError as error:
 
-        status_code = error.response.status_code
+        status_code = (
+            error.response.status_code
+        )
 
         logger.error(
             f"Remotive HTTP error "
@@ -172,20 +168,7 @@ def get_remotive_jobs(search_term):
             f"{error}"
         )
 
-        if status_code == 401:
-
-            print(
-                "Remotive authentication failed. "
-                "Check the API credentials."
-            )
-
-        elif status_code == 403:
-
-            print(
-                "Remotive access forbidden."
-            )
-
-        elif status_code == 429:
+        if status_code == 429:
 
             print(
                 "Remotive rate limit reached. "
@@ -215,7 +198,8 @@ def get_remotive_jobs(search_term):
         )
 
         print(
-            "Remotive returned an invalid response."
+            "Remotive returned an invalid "
+            "response."
         )
 
         return []
@@ -223,8 +207,7 @@ def get_remotive_jobs(search_term):
     except requests.exceptions.RequestException as error:
 
         logger.error(
-            f"Remotive request failed: "
-            f"{error}"
+            f"Remotive request failed: {error}"
         )
 
         print(
