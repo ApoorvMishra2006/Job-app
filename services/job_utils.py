@@ -1,25 +1,35 @@
 from datetime import datetime, timezone
 
 
-def remove_duplicate_jobs(jobs):
+def normalize_job_type(job_type):
 
-    seen = set()
-    unique_jobs = []
+    if not job_type:
+        return ""
 
-    for job in jobs:
+    job_type = str(job_type).strip().lower()
 
-        key = (
-            job.title.strip().lower(),
-            job.company.strip().lower(),
-            job.location.strip().lower()
-        )
+    replacements = {
+        "full-time": "full time",
+        "full_time": "full time",
+        "fulltime": "full time",
 
-        if key not in seen:
+        "part-time": "part time",
+        "part_time": "part time",
+        "parttime": "part time",
 
-            seen.add(key)
-            unique_jobs.append(job)
+        "contractor": "contract",
 
-    return unique_jobs
+        "internship": "intern",
+
+        "permanent": "permanent",
+
+        "temporary": "temporary"
+    }
+
+    return replacements.get(
+        job_type,
+        job_type
+    )
 
 
 def filter_jobs(
@@ -43,18 +53,30 @@ def filter_jobs(
 
         if job_types:
 
-            job_type = (
+            job_type = normalize_job_type(
                 getattr(
                     job,
                     "job_type",
                     None
                 )
-                or "Unknown"
-            ).lower()
+            )
+
+            selected_types = [
+                normalize_job_type(
+                    selected
+                )
+                for selected in job_types
+            ]
+
+            if not job_type:
+
+                continue
 
             if not any(
-                selected.lower() in job_type
-                for selected in job_types
+                selected == job_type
+                or selected in job_type
+                or job_type in selected
+                for selected in selected_types
             ):
 
                 continue
@@ -71,13 +93,15 @@ def filter_jobs(
                     "work_mode",
                     None
                 )
-                or "Unknown"
-            ).lower()
+                or ""
+            ).strip().lower()
 
-            if work_mode not in [
-                mode.lower()
+            selected_modes = [
+                str(mode).strip().lower()
                 for mode in work_modes
-            ]:
+            ]
+
+            if work_mode not in selected_modes:
 
                 continue
 
@@ -116,3 +140,89 @@ def filter_jobs(
         )
 
     return filtered_jobs
+
+
+def remove_duplicate_jobs(jobs):
+
+    unique_jobs = []
+
+    seen = set()
+
+    for job in jobs:
+
+        key = (
+            job.title.strip().lower(),
+            job.company.strip().lower(),
+            job.location.strip().lower()
+        )
+
+        if key in seen:
+
+            continue
+
+        seen.add(key)
+
+        unique_jobs.append(
+            job
+        )
+
+    return unique_jobs
+
+
+def sort_jobs(
+    jobs,
+    sort_by="Relevance"
+):
+
+    if sort_by == "Salary: High to Low":
+
+        return sorted(
+            jobs,
+            key=lambda job: (
+                getattr(
+                    job,
+                    "salary_max",
+                    None
+                ) or
+                getattr(
+                    job,
+                    "salary_min",
+                    None
+                ) or
+                0
+            ),
+            reverse=True
+        )
+
+    elif sort_by == "Salary: Low to High":
+
+        return sorted(
+            jobs,
+            key=lambda job: (
+                getattr(
+                    job,
+                    "salary_min",
+                    None
+                ) or
+                0
+            )
+        )
+
+    elif sort_by == "Newest":
+
+        return sorted(
+            jobs,
+            key=lambda job: (
+                getattr(
+                    job,
+                    "posted_date",
+                    None
+                ) or
+                datetime.min.replace(
+                    tzinfo=timezone.utc
+                )
+            ),
+            reverse=True
+        )
+
+    return jobs
